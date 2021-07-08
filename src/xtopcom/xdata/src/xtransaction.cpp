@@ -162,6 +162,8 @@ void xtransaction_t::set_len() {
 }
 
 bool xtransaction_t::digest_check() const {
+    if (get_tx_version() == 2)
+        return true;
     base::xstream_t stream(base::xcontext_t::instance());
     do_write_without_hash_signature(stream, true);
     uint256_t hash = utl::xsha2_256_t::digest((const char*)stream.data(), stream.size());
@@ -210,9 +212,6 @@ std::string xtransaction_t::transaction_type_to_string(uint16_t type) {
 }
 
 bool xtransaction_t::unuse_member_check() const {
-    if (get_tx_version() != 0) {
-        return false;
-    }
     if (get_to_ledger_id() != 0 || get_from_ledger_id() != 0) {
         return false;
     }
