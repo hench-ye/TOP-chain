@@ -106,6 +106,7 @@ void xcluster_query_manager::get_property(xjson_proc_t & json_proc) {
     const string & account = json_proc.m_request_json["params"]["account_addr"].asString();
     const string & type = json_proc.m_request_json["params"]["type"].asString();
     const std::string & prop_name = json_proc.m_request_json["params"]["data"].asString();
+    xinfo("get_property: %s,%s,%s", account.c_str(), type.c_str(), prop_name.c_str());
 #if 1
     xJson::Value result_json;
     m_bh.query_account_property(result_json, account, prop_name);

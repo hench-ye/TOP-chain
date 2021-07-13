@@ -56,3 +56,12 @@ inline uint32_t to_uint32(const std::string& input) {
     output += std::string(sizeof(uint32_t)-input.size(), 0);
     return *(uint32_t*)output.data();
 }
+inline uint16_t to_uint16(const std::string& input) {
+    std::string output(input);
+    std::reverse(output.begin(), output.end());
+    output += std::string(sizeof(uint16_t)-input.size(), 0);
+    return *(uint16_t*)output.data();
+}
+inline std::string data_to_string(const Data& data) {
+    return std::string(data.begin(), data.end());
+}

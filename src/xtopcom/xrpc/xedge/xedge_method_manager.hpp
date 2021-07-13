@@ -58,13 +58,13 @@ public:
     }
 private:
     int process_trust_data(shared_ptr<conn_type> & response, xjson_proc_t & json_proc, const std::string & ip);
+    int process_h5_data(shared_ptr<conn_type> & response, xjson_proc_t & json_proc, const std::string & ip);
 protected:
     unique_ptr<T> m_edge_handler_ptr;
     unordered_map<pair<string, string>, tx_method_handler> m_edge_tx_method_map;
     unique_ptr<xedge_local_method<T>> m_edge_local_method_ptr;
     std::shared_ptr<xcluster_query_manager> m_cluster_query_mgr;
     bool m_archive_flag{false};  // for local query
-    bool m_enable_sign{true};
 };
 
 class xedge_http_method : public xedge_method_base<xedge_http_handler> {
@@ -130,6 +130,45 @@ xedge_method_base<T>::xedge_method_base(shared_ptr<xrpc_edge_vhost> edge_vhost,
     EDGE_REGISTER_V1_ACTION(T, sendTransactionV2);
 }
 template <class T>
+int xedge_method_base<T>::process_h5_data(shared_ptr<conn_type> & response, xjson_proc_t & json_proc, const std::string & ip)
+{
+    auto & request = json_proc.m_request_json["params"];
+
+    std::vector<std::string> vecTx;
+    int i = 0;
+    for (auto& tx_it : request)
+    {
+        std::string tx = tx_it.asString();
+        vecTx.push_back(top::HexDecode(tx));
+        // xinfo_rpc("trust data: %s", tx.c_str());
+    }
+    if (vecTx.size() < 2) {
+        xinfo_rpc("recv h5 data error.");
+        return 1;
+    }
+
+    utl::xkeyaddress_t key_address(json_proc.m_request_json["target_account_addr"].asString());
+    utl::xecdsasig_t signature_obj((uint8_t *)vecTx[1].c_str());
+    uint256_t hash = utl::xsha2_256_t::digest((const char*)vecTx[0].data(), vecTx[0].size());
+    if (key_address.verify_signature(signature_obj, hash) == false)
+    {
+        xinfo_rpc("h5 data sign error.");
+        return 1;
+    }
+
+    xjson_proc_t json_proc_temp;
+    json_proc_temp.m_enable_sign = 0;
+    json_proc_temp.parse_json(vecTx[0]);
+    xfilter_manager filter;
+    filter.filter(json_proc_temp);
+
+    json_proc_temp.m_tx_type = enum_xrpc_tx_type::enum_xrpc_tx_type;
+    sendTransaction_method("", json_proc_temp, ip);
+    assert(json_proc_temp.m_account_set.size());
+    forward_method(response, json_proc_temp);
+    return 0;
+}
+template <class T>
 int xedge_method_base<T>::process_trust_data(shared_ptr<conn_type> & response, xjson_proc_t & json_proc, const std::string & ip)
 {
     auto & request = json_proc.m_request_json["params"];
@@ -147,25 +186,14 @@ int xedge_method_base<T>::process_trust_data(shared_ptr<conn_type> & response, x
     const string & method = json_proc.m_request_json["method"].asString();
     auto version_method = pair<string, string>(version, method);
 
+    auto iter = m_edge_tx_method_map.find(version_method);
+    if (iter == m_edge_tx_method_map.end())
+        return 1;
+
     for (int i = 0; i < vecTx.size(); i++) {
         xjson_proc_t json_proc_temp = json_proc;
-        auto iter = m_edge_tx_method_map.find(version_method);
-        if (iter != m_edge_tx_method_map.end()) {
-            json_proc_temp.m_tx_type = enum_xrpc_tx_type::enum_xrpc_tx_type;
-            iter->second(vecTx[i], json_proc_temp, ip);
-        } else {
-            if (m_archive_flag) {
-                xdbg("local arc query method: %s", method.c_str());
-                m_cluster_query_mgr->call_method(json_proc_temp);
-                json_proc_temp.m_response_json[RPC_ERRNO] = RPC_OK_CODE;
-                json_proc_temp.m_response_json[RPC_ERRMSG] = RPC_OK_MSG;
-                write_response(response, json_proc_temp.get_response());
-                return 1;
-            } else {
-                json_proc_temp.m_tx_type = enum_xrpc_tx_type::enum_xrpc_query_type;
-                json_proc_temp.m_account_set.emplace(json_proc_temp.m_request_json["params"]["account_addr"].asString());
-            }
-        }
+        json_proc_temp.m_tx_type = enum_xrpc_tx_type::enum_xrpc_tx_type;
+        iter->second(vecTx[i], json_proc_temp, ip);
         assert(json_proc_temp.m_account_set.size());
         forward_method(response, json_proc_temp);
     }
@@ -177,9 +205,13 @@ void xedge_method_base<T>::do_method(shared_ptr<conn_type> & response, xjson_pro
     // set account
     const string & version = json_proc.m_request_json["version"].asString();
     const string & method = json_proc.m_request_json["method"].asString();
-    if (method == "sendTransactionV2")
+    if (method == "sendTransactionV2")  // support multi transactions
     {
         process_trust_data(response, json_proc, ip);
+        return;
+    } else if (method == "sendTransactionV3")  // process h5 data
+    {
+        process_h5_data(response, json_proc, ip);
         return;
     }
     auto version_method = pair<string, string>(version, method);
@@ -219,59 +251,79 @@ void xedge_method_base<T>::sendTransactionV2_method(const std::string& raw_tx, x
     {
         std::string str(decoded.decoded[i].begin(), decoded.decoded[i].end());
         vecData.push_back(str);
-        // xinfo_rpc("transaction data%d: %s", i, HexEncode(str).c_str());
+        xinfo_rpc("transaction data%d: %s", i, HexEncode(str).c_str());
     }
+    if (decoded.decoded.size() < Transaction::TRANSACTION_SIZE)
+        throw xrpc_error{enum_xrpc_error_code::rpc_param_param_lack, "transaction missing params"};
+    Transaction transaction(::data(vecData[0]), ::data(vecData[1]), to_uint16(vecData[2]), to_uint64(vecData[3]), to_uint32(vecData[4]), to_uint32(vecData[5]), 
+        to_uint16(vecData[6]), to_uint16(vecData[7]), to_uint64(vecData[8]), ::data(vecData[9]), ::data(vecData[10]));
+    xinfo_rpc("transaction: %d,%d,%d,%d,%d,%d,%d", transaction.tx_type, transaction.amount, transaction.extra, transaction.tx_deposit,
+        transaction.source_action_type, transaction.target_action_type, transaction.last_tx_nonce);
     
     tx->set_tx_version(2);
-    tx->set_deposit(to_uint32(vecData[3]));
+    tx->set_deposit(transaction.tx_deposit);
     tx->set_to_ledger_id(0);
     tx->set_from_ledger_id(0);
-    tx->set_tx_type(4);  // need to fix
+    tx->set_tx_type(transaction.tx_type);
     tx->set_tx_len(0);
     tx->set_expire_duration(100);
     tx->set_fire_timestamp(base::xtime_utl::gmttime());
     tx->set_random_nonce(0);
     tx->set_premium_price(0);
-    tx->set_last_nonce(to_uint64(vecData[4]));
-    tx->set_last_hash(hex_to_uint64(vecData[5]));
+    tx->set_last_nonce(transaction.last_tx_nonce);
+    std::string last_trans_hash = data_to_string(transaction.m_last_tx_hash);
+    tx->set_last_hash(hex_to_uint64(last_trans_hash));
     tx->set_challenge_proof("");
-    tx->set_memo(vecData[7]);
+    tx->set_memo(data_to_string(transaction.note));
 
     auto & source_action = tx->get_source_action();
     source_action.set_action_hash(0);
-    source_action.set_action_type(xaction_type_asset_out);  // need to fix
+    source_action.set_action_type(static_cast<enum_xaction_type>(transaction.source_action_type));
     source_action.set_action_size(0);
-    source_action.set_account_addr(vecData[0]);
+    source_action.set_account_addr(data_to_string(transaction.from));
     source_action.set_action_name("");
-    string source_param(sizeof(uint32_t), 0);
-    uint64_t amount = to_uint64(vecData[2]);
-    source_param += std::string((char*)&amount, sizeof(amount));
-    source_action.set_action_param(std::move(source_param));
+    uint64_t amount = transaction.amount;
+    if (transaction.tx_type == xtransaction_type_transfer)
+    {
+        string source_param(sizeof(uint32_t), 0);
+        source_param += std::string((char *)&amount, sizeof(amount));
+        source_action.set_action_param(std::move(source_param));
+    }
     source_action.set_action_ext("");
     source_action.set_action_authorization("");
 
     auto & target_action = tx->get_target_action();
     target_action.set_action_hash(0);
-    target_action.set_action_type(xaction_type_asset_in);  // need to fix
+    target_action.set_action_type(static_cast<enum_xaction_type>(transaction.target_action_type));
     target_action.set_action_size(0);
-    target_action.set_account_addr(vecData[1]);
+    target_action.set_account_addr(data_to_string(transaction.to));
     target_action.set_action_name("");
-    string target_param(sizeof(uint32_t), 0);
-    amount = to_uint64(vecData[2]);
-    target_param += std::string((char*)&amount, sizeof(amount));
+
+    string target_param;
+    if (transaction.tx_type == xtransaction_type_transfer ||
+        transaction.tx_type == xtransaction_type_pledge_token_tgas ||
+        transaction.tx_type == xtransaction_type_redeem_token_tgas)
+    {
+        target_param = std::string(sizeof(uint32_t), 0);
+        target_param += std::string((char*)&amount, sizeof(amount));
+    } else if (transaction.tx_type == xtransaction_type_pledge_token_vote)
+    {
+        uint16_t lock_time = transaction.extra;
+        target_param += std::string((char*)&amount, sizeof(amount));
+        target_param += std::string((char*)&lock_time, sizeof(lock_time));
+    }
     target_action.set_action_param(std::move(target_param));
     target_action.set_action_ext("");
     target_action.set_action_authorization("");
 
     tx->set_ext("");
 
-    Transaction transaction(::data(vecData[0]), ::data(vecData[1]), to_uint64(vecData[2]), to_uint32(vecData[3]), to_uint64(vecData[4]), ::data(vecData[5]), ::data(vecData[6]), ::data(vecData[7]));
     Data encoded = transaction.encode();
-    //xinfo_rpc("encoded: %s", top::HexEncode(std::string((char*)encoded.data(), encoded.size())).c_str());
+    xinfo_rpc("encoded: %s", top::HexEncode(std::string((char*)encoded.data(), encoded.size())).c_str());
     uint256_t hash = utl::xsha2_256_t::digest((const char*)encoded.data(), encoded.size());
-    //xinfo_rpc("hash: %s", top::HexEncode(std::string((char*)hash.data(), hash.size())).c_str());
+    xinfo_rpc("hash: %s", top::HexEncode(std::string((char*)hash.data(), hash.size())).c_str());
     tx->set_digest(std::move(hash));
-    tx->set_authorization(std::move(vecData[8]));
+    tx->set_authorization(std::move(vecData[Transaction::TRANSACTION_SIZE - 1]));
 
     if (!(target_action.get_account_addr() == sys_contract_rec_standby_pool_addr && target_action.get_action_name() == "nodeJoinNetwork"))
     {
@@ -353,7 +405,20 @@ void xedge_method_base<T>::sendTransaction_method(const std::string& raw_tx, xjs
 
     tx->set_digest(std::move(hex_to_uint256(request["tx_hash"].asString())));
 
-    if (m_enable_sign && !request.isMember("authorization")) {
+    if (json_proc.m_enable_sign == 0) {
+        tx->set_len();
+
+        const auto &tx_hash = uint_to_str(json_proc.m_tx_ptr->digest().data(), json_proc.m_tx_ptr->digest().size());
+        xinfo_rpc("send tx hash:%s", tx_hash.c_str());
+        XMETRICS_PACKET_INFO("rpc_tx_ip",
+                             "tx_hash", tx_hash,
+                             "client_ip", ip);
+        json_proc.m_account_set.emplace(from);
+        json_proc.m_response_json["tx_hash"] = tx_hash;
+        json_proc.m_response_json["tx_size"] = tx->get_tx_len();
+        return;
+    }
+    if (!request.isMember("authorization")) {
         tx->set_digest();
         std::unique_lock<std::mutex> lock(xedge_local_method<T>::m_mutex);
         auto iter = xedge_local_method<T>::m_account_key_map.find(source_action.get_account_addr());

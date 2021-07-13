@@ -27,6 +27,7 @@ public:
     data::xtransaction_ptr_t      m_tx_ptr;
     enum_xrpc_tx_type       m_tx_type;
     unordered_set<string>   m_account_set{};
+    uint16_t                m_enable_sign{1};
 };
 
 NS_END2

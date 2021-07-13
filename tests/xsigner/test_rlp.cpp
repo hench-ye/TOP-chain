@@ -135,11 +135,11 @@ TEST_F(test_rlp, sign_check) {
     std::string node_addr("T80000968927100f3cb7b23e8d477298311648978d8613");
     top::utl::xkeyaddress_t xaddr{node_addr};
 
-    std::string hash("046e2975b90bf546cb242c1d2b92656c4f3f9f1140773d55b371c5c42f5c1255");
+    std::string hash("67a567050d7c786e63b39761a193400fc4548dec11a83159e6553ebc19d0d472");
     hash = HexDecode(hash);
     uint256_t hash_value((uint8_t*)hash.c_str());
 
-    std::string s("01eb3516a61621d4392c44c6e3e788e509560d651a0168ec0501521e63300ee0c269a85103d62a20bbf29caba79115b801e2497a8af06ba54862c657308c8ed33c");
+    std::string s("007797956315e07025c748e92e54c7062641bc8c9bb63b5a094b09fffc2e1ee33f09698c6aa446626541979b98a394adec0f669048220b346152c5267731009f4d");
     s = HexDecode(s);
     xecdsasig_t sign((uint8_t*)s.c_str());
     EXPECT_TRUE(xaddr.verify_signature(sign, hash_value));
