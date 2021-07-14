@@ -311,6 +311,8 @@ void xedge_method_base<T>::sendTransactionV2_method(const std::string& raw_tx, x
         uint16_t lock_time = transaction.extra;
         target_param += std::string((char*)&amount, sizeof(amount));
         target_param += std::string((char*)&lock_time, sizeof(lock_time));
+    } else if (transaction.tx_type == xtransaction_type_redeem_token_vote) {
+        target_param += std::string((char*)&amount, sizeof(amount));
     }
     target_action.set_action_param(std::move(target_param));
     target_action.set_action_ext("");
