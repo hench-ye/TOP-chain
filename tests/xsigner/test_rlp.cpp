@@ -135,19 +135,32 @@ TEST_F(test_rlp, sign_check) {
     std::string node_addr("T80000968927100f3cb7b23e8d477298311648978d8613");
     top::utl::xkeyaddress_t xaddr{node_addr};
 
-    std::string hash("67a567050d7c786e63b39761a193400fc4548dec11a83159e6553ebc19d0d472");
+    std::string hash("676cb3d7d9d2fba08e8b1ec03dbc465f168f08002709e4413d400b57fbbddf87");
     hash = HexDecode(hash);
     uint256_t hash_value((uint8_t*)hash.c_str());
 
-    std::string s("007797956315e07025c748e92e54c7062641bc8c9bb63b5a094b09fffc2e1ee33f09698c6aa446626541979b98a394adec0f669048220b346152c5267731009f4d");
+    std::string s("01536244fd2699c0810f3646d02fee7f9c5f8775426c61d9be87aa035bc18335894caed6fa0f9d6ae98385b9abd9e118d7e6b38d8ae8a78f7b5c0a1c9f3a618d53");
     s = HexDecode(s);
     xecdsasig_t sign((uint8_t*)s.c_str());
     EXPECT_TRUE(xaddr.verify_signature(sign, hash_value));
 
-    std::string pri = HexDecode("b0032f8057051b611a7c0ea373da4d7a6764351030ed497e6134fd9e11775b19");
+    std::string pri = HexDecode("2ff271ab38849388c49e24fbc52d357384c24ed929df4f0c7b81afca7c775b62");
     xecprikey_t privk((uint8_t*)pri.c_str());
     xecdsasig_t sign2 = privk.sign(hash_value);
     uint8_t* p_comp_data = sign2.get_compact_signature();
     int size = sign2.get_compact_signature_size();
+    std::cout << "sign: " << HexEncode(std::string((char*)p_comp_data, size)) <<std::endl;
+}
+
+TEST_F(test_rlp, json_test) {
+    std::string pri = HexDecode("2ff271ab38849388c49e24fbc52d357384c24ed929df4f0c7b81afca7c775b62");
+    xecprikey_t privk((uint8_t*)pri.c_str());
+    xecpubkey_t pub_key = privk.get_public_key();
+    std::cout << "pub key: " << HexEncode(std::string((char*)pub_key.data(), pub_key.size())) <<std::endl;
+    std::string encoded("hello world!");
+    uint256_t hash_value = utl::xsha2_256_t::digest((const char*)encoded.data(), encoded.size());
+    xecdsasig_t sign = privk.sign(hash_value);
+    uint8_t* p_comp_data = sign.get_compact_signature();
+    int size = sign.get_compact_signature_size();
     std::cout << "sign: " << HexEncode(std::string((char*)p_comp_data, size)) <<std::endl;
 }

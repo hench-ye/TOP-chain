@@ -162,8 +162,6 @@ void xtransaction_t::set_len() {
 }
 
 bool xtransaction_t::digest_check() const {
-    if (get_tx_version() == 2)
-        return true;
     base::xstream_t stream(base::xcontext_t::instance());
     do_write_without_hash_signature(stream, true);
     uint256_t hash = utl::xsha2_256_t::digest((const char*)stream.data(), stream.size());

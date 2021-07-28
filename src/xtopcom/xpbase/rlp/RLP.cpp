@@ -134,12 +134,18 @@ RLP::DecodedItem RLP::decodeList(const Data& input) {
 }
 
 uint64_t RLP::decodeLength(const Data& data) {
-    size_t index = 0;
-    auto decodedLen = decodeVarInt(data, index);
-    if (!std::get<0>(decodedLen)) {
-        throw std::invalid_argument("can't decode length of string/list length");
-    }
-    return std::get<1>(decodedLen);
+    std::string len(data.begin(), data.end());
+    std::reverse(len.begin(), len.end());
+    if (len.size() == 1)
+        return *(uint8_t*)len.c_str();
+    else if (len.size() == 2)
+        return *(uint16_t*)len.c_str();
+    else if (len.size() == 4)
+        return *(uint32_t*)len.c_str();
+    else if (len.size() == 8)
+        return *(uint64_t*)len.c_str();
+    throw std::invalid_argument("can't decode length of string/list length");
+    return 0;
 }
 
 RLP::DecodedItem RLP::decode(const Data& input) {
