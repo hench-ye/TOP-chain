@@ -56,7 +56,7 @@ xtop_application::xtop_application(common::xnode_id_t const & node_id, xpublic_k
     base::xvchain_t::instance().set_xdbstore(m_store.get());
     base::xvchain_t::instance().set_xevmbus(m_bus.get());
     m_blockstore.attach(store::get_vblockstore());
-    
+
     m_nodesvr_ptr = make_object_ptr<election::xvnode_house_t>(node_id, sign_key, m_blockstore, make_observer(m_bus.get()));
 #ifdef MOCK_CA
     m_cert_ptr = make_object_ptr<xschnorrcert_t>((uint32_t)1);
@@ -343,7 +343,7 @@ bool xtop_application::create_genesis_account(std::string const & address, chain
 }
 
 int32_t xtop_application::handle_register_node(std::string const & node_addr, std::string const & node_sign) {
-#ifndef XENABLE_MOCK_ZEC_STAKE
+#if !defined(XENABLE_MOCK_ZEC_STAKE)
     // filter seed node
     if (xrootblock_t::is_seed_node(node_addr)) {
         xinfo("[register_node_callback] success, seed node, node_addr: %s", node_addr.c_str());
