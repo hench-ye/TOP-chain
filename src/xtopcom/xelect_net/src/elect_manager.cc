@@ -18,7 +18,9 @@ namespace elect {
 ElectManager::ElectManager(transport::TransportPtr transport, const base::Config & config) : transport_(transport), config_(config) {
 }
 
-void ElectManager::OnElectUpdated(const data::election::xelection_result_store_t & election_result_store, common::xzone_id_t const & zid) {
+void ElectManager::OnElectUpdated(const data::election::xelection_result_store_t & election_result_store,
+                                  common::xzone_id_t const & zid,
+                                  std::uint64_t const associated_blk_height) {
     using top::data::election::xelection_cluster_result_t;
     using top::data::election::xelection_group_result_t;
     using top::data::election::xelection_info_bundle_t;
@@ -41,10 +43,9 @@ void ElectManager::OnElectUpdated(const data::election::xelection_result_store_t
                     auto const & group_id = top::get<common::xgroup_id_t const>(group_result_info);
                     auto const & group_result = top::get<xelection_group_result_t>(group_result_info);
 
-                    common::xip2_t xip2{network_id, zid, cluster_id, group_id};
-
                     auto const & size = static_cast<uint16_t>(group_result.size());
-                    auto const & height = group_result.group_version().value();  // use group_version as xip height;
+                    // auto const & height = group_result.group_version().value();  // use group_version as xip height;
+                    auto const & height = associated_blk_height;
 
                     std::vector<wrouter::WrouterTableNodes> elect_data;
                     for (auto const & node_info : group_result) {
@@ -90,9 +91,11 @@ void ElectManager::UpdateRoutingTable(std::vector<wrouter::WrouterTableNodes> co
     base::KadmliaKeyPtr kad_key = base::GetKadmliaKey(self_wrouter_nodes.m_xip2);
     base::ServiceType service_type = kad_key->GetServiceType();
 
-    if (service_type.IsBroadcastService()) {
-        wrouter::MultiRouting::Instance()->RemoveElectRoutingTable(service_type);
-    } else if (wrouter::MultiRouting::Instance()->GetElectRoutingTable(service_type) != nullptr) {
+    assert(!service_type.IsBroadcastService());
+    // if (service_type.IsBroadcastService()) {
+    //     wrouter::MultiRouting::Instance()->RemoveElectRoutingTable(service_type);
+    // } else 
+    if (wrouter::MultiRouting::Instance()->GetElectRoutingTable(service_type) != nullptr) {
         xinfo("ElectManager::UpdateRoutingTable get repeated routing table info xip2: service_type:%s", self_wrouter_nodes.m_xip2.to_string().c_str(), service_type.info().c_str());
         return;
     }

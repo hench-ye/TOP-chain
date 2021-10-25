@@ -43,7 +43,7 @@ private:
 private:
     std::mutex net_nodes_cache_map_mutex_;
     // key is service_type, value is vector of accounts
-    std::unordered_map<base::ServiceType, std::vector<wrouter::WrouterTableNodes>> net_nodes_cache_map_;
+    std::map<base::ServiceType, std::vector<wrouter::WrouterTableNodes>> net_nodes_cache_map_;
 
     ServiceNodes * service_nodes_{nullptr};
 };

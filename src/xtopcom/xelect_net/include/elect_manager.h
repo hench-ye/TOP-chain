@@ -25,7 +25,7 @@ public:
     ~ElectManager() = default;
 
 public:
-    void OnElectUpdated(const data::election::xelection_result_store_t & election_result_store, common::xzone_id_t const & zid);
+    void OnElectUpdated(const data::election::xelection_result_store_t & election_result_store, common::xzone_id_t const & zid, std::uint64_t const associated_blk_height);
 
     void OnElectQuit(const common::xip2_t & xip2);
 

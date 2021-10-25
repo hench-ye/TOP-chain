@@ -25,7 +25,7 @@ public:
     bool operator!=(ServiceType const &other) const;
     bool operator<(ServiceType const &other) const;
 
-    bool IsNewer(ServiceType const &other, int _value = 1) const;
+    bool IsNewer(ServiceType const &other) const;
 
     // for edge && archive node routing table. The height is always the same. 
     // The P2P net should have only one round of working node.
