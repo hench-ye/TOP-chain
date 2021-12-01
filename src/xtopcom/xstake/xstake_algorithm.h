@@ -102,7 +102,7 @@ constexpr uint64_t TIMER_BLOCK_HEIGHT_PER_YEAR = 3155815;
  * @return true
  * @return false
  */
-bool check_registered_nodes_active(std::map<std::string, std::string> const & nodes);
+bool check_registered_nodes_active(std::map<std::string, std::string> const & nodes, bool const enable_archive_miner);
 
 /*#if defined(__LINUX_PLATFORM__) || defined(__MAC_PLATFORM__)
 typedef __uint128_t top::xstake::uint128_t;
@@ -113,7 +113,7 @@ typedef uint64_t    top::xstake::uint128_t;
 // typedef uint128_t top::xstake::uint128_t;
 
 struct xreward_node_record final : xserializable_based_on<void> {
-    // common::xrole_type_t m_registered_role {common::xrole_type_t::invalid};
+    // common::xminer_type_t m_registered_role {common::xminer_type_t::invalid};
     top::xstake::uint128_t m_accumulated{0};
     top::xstake::uint128_t m_unclaimed{0};
     uint64_t m_last_claim_time{0};
@@ -272,59 +272,59 @@ struct account_stake_t final {
     uint64_t stake;
 };
 
-template <common::xrole_type_t MinerTypeV>
+template <common::xminer_type_t MinerTypeV>
 uint64_t minimal_deposit_of();
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::edge>();
+uint64_t minimal_deposit_of<common::xminer_type_t::edge>();
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::archive>();
+uint64_t minimal_deposit_of<common::xminer_type_t::archive>();
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::full_node>();
+uint64_t minimal_deposit_of<common::xminer_type_t::full_node>();
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::advance>();
+uint64_t minimal_deposit_of<common::xminer_type_t::advance>();
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::validator>();
+uint64_t minimal_deposit_of<common::xminer_type_t::validator>();
 
 template <common::xnode_type_t NodeTypeV>
-bool could_be(common::xrole_type_t const miner_type);
+bool could_be(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::rec>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::rec>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::zec>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::zec>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::consensus_auditor>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::consensus_auditor>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::auditor>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::auditor>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::consensus_validator>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::consensus_validator>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::validator>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::validator>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::storage_archive>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::storage_archive>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::archive>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::archive>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::storage_full_node>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::storage_full_node>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::full_node>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::full_node>(common::xminer_type_t const miner_type);
 
 template <>
-bool could_be<common::xnode_type_t::edge>(common::xrole_type_t const miner_type);
+bool could_be<common::xnode_type_t::edge>(common::xminer_type_t const miner_type);
 
 struct xreg_node_info final : public xserializable_based_on<void> {
 public:
@@ -350,6 +350,9 @@ public:
     /// @brief Check to see if this node could be an archive based on miner type.
     bool could_be_archive() const noexcept;
 
+    /// @brief Check to see if this node could be an archive based on minter type.
+    bool legacy_could_be_archive() const noexcept;
+
     /// @brief Check to see if this node could be an edge based on miner type.
     bool could_be_edge() const noexcept;
 
@@ -371,6 +374,9 @@ public:
     /// @brief Check to see if this node can be an archive based on miner type and other information (e.g. deposit, amount of received tickets).
     bool can_be_archive() const noexcept;
 
+    /// @brief Check to see if this node can be an archive based on miner type and other information (e.g. deposit, amount of received tickets).
+    bool legacy_can_be_archive() const noexcept;
+
     /// @brief Check to see if this node can be an edge based on miner type and other information (e.g. deposit, amount of received tickets).
     bool can_be_edge() const noexcept;
 
@@ -384,7 +390,7 @@ public:
      * @return false
      */
     bool is_invalid_node() const noexcept {
-        return m_registered_role == common::xrole_type_t::invalid;
+        return m_registered_role == common::xminer_type_t::invalid;
     }
 
     /**
@@ -395,16 +401,6 @@ public:
      */
     bool is_genesis_node() const noexcept {
         return m_genesis_node;
-    }
-
-    /**
-     * @brief Get the deposit
-     *
-     * @return true
-     * @return false
-     */
-    uint64_t get_deposit() const noexcept {
-        return m_account_mortgage;
     }
 
     uint64_t deposit() const noexcept;
@@ -451,9 +447,9 @@ public:
     /**
      * @brief Get role type
      *
-     * @return common::xrole_type_t
+     * @return common::xminer_type_t
      */
-    common::xrole_type_t get_role_type() const noexcept {
+    common::xminer_type_t get_role_type() const noexcept {
         return m_registered_role;
     }
 
@@ -485,7 +481,7 @@ public:
         return stake;
     }
 
-    template <common::xrole_type_t MinerTypeV>
+    template <common::xminer_type_t MinerTypeV>
     bool miner_type_has() const noexcept {
         return common::has<MinerTypeV>(m_registered_role);
     }
@@ -512,7 +508,7 @@ public:
 
     common::xaccount_address_t m_account{};
     uint64_t m_account_mortgage{0};
-    common::xrole_type_t m_registered_role{common::xrole_type_t::invalid};
+    common::xminer_type_t m_registered_role{common::xminer_type_t::invalid};
     uint64_t m_vote_amount{0};
     uint64_t m_auditor_credit_numerator{0};
     uint64_t m_auditor_credit_denominator{1000000};
@@ -551,7 +547,7 @@ class xtop_account_registration_info final : public xserializable_based_on<void>
 private:
     common::xaccount_address_t m_account{};
     uint64_t m_account_mortgage{0};
-    common::xrole_type_t m_registered_role{common::xrole_type_t::invalid};
+    common::xminer_type_t m_registered_role{common::xminer_type_t::invalid};
     uint64_t m_vote_amount{0};
     uint64_t m_auditor_credit_numerator{0};
     uint64_t m_auditor_credit_denominator{1000000};
@@ -581,7 +577,7 @@ public:
     uint64_t edge_stake() const noexcept;
     uint64_t archive_stake() const noexcept;
 
-    common::xrole_type_t role() const noexcept;
+    common::xminer_type_t role() const noexcept;
 
     /**
      * @brief write to stream

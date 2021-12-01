@@ -1,14 +1,15 @@
-// Copyright (c) 2017-2018 Telos Foundation & contributors
+// Copyright (c) 2017-present Telos Foundation & contributors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #include "xstake/xstake_algorithm.h"
 
 #include "xbasic/xutility.h"
 #include "xdata/xnative_contract_address.h"
+#include "xchain_upgrade/xchain_upgrade_center.h"
 
 NS_BEG2(top, xstake)
 
-bool check_registered_nodes_active(std::map<std::string, std::string> const & nodes) {
+bool check_registered_nodes_active(std::map<std::string, std::string> const & nodes, bool const enable_archive_miner) {
     uint32_t auditor_num = 0;
     uint32_t validator_num = 0;
     uint32_t archive_num = 0;
@@ -29,7 +30,7 @@ bool check_registered_nodes_active(std::map<std::string, std::string> const & no
              reg_node_info.m_account.c_str(),
              reg_node_info.can_be_auditor(),
              reg_node_info.can_be_validator(),
-             reg_node_info.can_be_archive(),
+             enable_archive_miner ? reg_node_info.can_be_archive() : reg_node_info.legacy_can_be_archive(),
              reg_node_info.can_be_edge(),
              reg_node_info.m_vote_amount);
 
@@ -42,9 +43,17 @@ bool check_registered_nodes_active(std::map<std::string, std::string> const & no
         if (reg_node_info.can_be_validator()) {
             validator_num++;
         }
-        if (reg_node_info.can_be_archive()) {
-            archive_num++;
+
+        if (enable_archive_miner) {
+            if (reg_node_info.can_be_archive()) {
+                archive_num++;
+            }
+        } else {
+            if (reg_node_info.legacy_can_be_archive()) {
+                archive_num++;
+            }
         }
+        
         if (reg_node_info.can_be_edge()) {
             edge_num++;
         }
@@ -172,83 +181,83 @@ int32_t xrefund_info::do_read(base::xstream_t & stream) {
 }
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::edge>() {
+uint64_t minimal_deposit_of<common::xminer_type_t::edge>() {
     return XGET_ONCHAIN_GOVERNANCE_PARAMETER(min_edge_deposit);
 }
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::archive>() {
+uint64_t minimal_deposit_of<common::xminer_type_t::archive>() {
     return XGET_ONCHAIN_GOVERNANCE_PARAMETER(min_archive_deposit);
 }
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::full_node>() {
+uint64_t minimal_deposit_of<common::xminer_type_t::full_node>() {
     return 0;
 }
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::advance>() {
+uint64_t minimal_deposit_of<common::xminer_type_t::advance>() {
     return XGET_ONCHAIN_GOVERNANCE_PARAMETER(min_auditor_deposit);
 }
 
 template <>
-uint64_t minimal_deposit_of<common::xrole_type_t::validator>() {
+uint64_t minimal_deposit_of<common::xminer_type_t::validator>() {
     return XGET_ONCHAIN_GOVERNANCE_PARAMETER(min_validator_deposit);
 }
 
 template <>
-bool could_be<common::xnode_type_t::rec>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::advance>(miner_type);
+bool could_be<common::xnode_type_t::rec>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::advance>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::zec>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::advance>(miner_type);
+bool could_be<common::xnode_type_t::zec>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::advance>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::consensus_auditor>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::advance>(miner_type);
+bool could_be<common::xnode_type_t::consensus_auditor>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::advance>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::auditor>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::advance>(miner_type);
+bool could_be<common::xnode_type_t::auditor>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::advance>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::consensus_validator>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::validator>(miner_type) || common::has<common::xrole_type_t::advance>(miner_type);
+bool could_be<common::xnode_type_t::consensus_validator>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::validator>(miner_type) || common::has<common::xminer_type_t::advance>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::validator>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::validator>(miner_type) || common::has<common::xrole_type_t::advance>(miner_type);
+bool could_be<common::xnode_type_t::validator>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::validator>(miner_type) || common::has<common::xminer_type_t::advance>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::storage_archive>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::archive>(miner_type);
+bool could_be<common::xnode_type_t::storage_archive>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::archive>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::archive>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::archive>(miner_type);
+bool could_be<common::xnode_type_t::archive>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::archive>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::storage_full_node>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::full_node>(miner_type);
+bool could_be<common::xnode_type_t::storage_full_node>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::full_node>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::full_node>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::full_node>(miner_type);
+bool could_be<common::xnode_type_t::full_node>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::full_node>(miner_type);
 }
 
 template <>
-bool could_be<common::xnode_type_t::edge>(common::xrole_type_t const miner_type) {
-    return common::has<common::xrole_type_t::edge>(miner_type);
+bool could_be<common::xnode_type_t::edge>(common::xminer_type_t const miner_type) {
+    return common::has<common::xminer_type_t::edge>(miner_type);
 }
 
 bool xreg_node_info::could_be_rec() const noexcept {
@@ -269,6 +278,10 @@ bool xreg_node_info::could_be_validator() const noexcept {
 
 bool xreg_node_info::could_be_archive() const noexcept {
     return could_be<common::xnode_type_t::storage_archive>(m_registered_role);
+}
+
+bool xreg_node_info::legacy_could_be_archive() const noexcept {
+    return could_be_auditor();
 }
 
 bool xreg_node_info::could_be_edge() const noexcept {
@@ -295,6 +308,10 @@ bool xreg_node_info::can_be_archive() const noexcept {
     return could_be_archive();
 }
 
+bool xreg_node_info::legacy_can_be_archive() const noexcept {
+    return can_be_auditor();
+}
+
 bool xreg_node_info::can_be_auditor() const noexcept {
     return could_be_auditor() && m_vote_amount * TOP_UNIT >= deposit();
 }
@@ -313,24 +330,24 @@ uint64_t xreg_node_info::deposit() const noexcept {
 
 uint64_t xreg_node_info::get_required_min_deposit() const noexcept {
     uint64_t min_deposit = 0;
-    if (miner_type_has<common::xrole_type_t::edge>()) {
-        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xrole_type_t::edge>());
+    if (miner_type_has<common::xminer_type_t::edge>()) {
+        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xminer_type_t::edge>());
     }
 
-    if (miner_type_has<common::xrole_type_t::validator>()) {
-        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xrole_type_t::validator>());
+    if (miner_type_has<common::xminer_type_t::validator>()) {
+        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xminer_type_t::validator>());
     }
 
-    if (miner_type_has<common::xrole_type_t::advance>()) {
-        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xrole_type_t::advance>());
+    if (miner_type_has<common::xminer_type_t::advance>()) {
+        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xminer_type_t::advance>());
     }
 
-    if (miner_type_has<common::xrole_type_t::archive>()) {
-        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xrole_type_t::archive>());
+    if (miner_type_has<common::xminer_type_t::archive>()) {
+        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xminer_type_t::archive>());
     }
 
-    if (miner_type_has<common::xrole_type_t::full_node>()) {
-        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xrole_type_t::full_node>());
+    if (miner_type_has<common::xminer_type_t::full_node>()) {
+        min_deposit = std::max(min_deposit, minimal_deposit_of<common::xminer_type_t::full_node>());
     }
 
     return min_deposit;
@@ -487,9 +504,7 @@ void xreg_node_info::slash_credit_score(common::xnode_type_t node_type) {
         if (m_auditor_credit_numerator < config_min) {
             m_auditor_credit_numerator = config_min;
         }
-
     }
-
 }
 
 void xreg_node_info::award_credit_score(common::xnode_type_t node_type) {
@@ -512,13 +527,11 @@ void xreg_node_info::award_credit_score(common::xnode_type_t node_type) {
             return;
         }
     }
-
-
 }
 
 xreg_node_info get_reg_info(observer_ptr<store::xstore_face_t> const & store, common::xaccount_address_t const & node_addr) {
     std::string value_str;
-    int         ret = store->map_get(top::sys_contract_rec_registration_addr, xstake::XPORPERTY_CONTRACT_REG_KEY, node_addr.value(), value_str);
+    int ret = store->map_get(top::sys_contract_rec_registration_addr, xstake::XPORPERTY_CONTRACT_REG_KEY, node_addr.value(), value_str);
 
     if (ret != store::xstore_success || value_str.empty()) {
         xwarn("[get_reg_info] get node register info fail, node_addr: %s", node_addr.value().c_str());
@@ -530,8 +543,6 @@ xreg_node_info get_reg_info(observer_ptr<store::xstore_face_t> const & store, co
 
     node_info.serialize_from(stream);
     return node_info;
-
-
 }
 
 std::string xissue_detail::to_string() const {
