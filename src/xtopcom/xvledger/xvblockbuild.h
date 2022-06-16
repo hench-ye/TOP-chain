@@ -37,6 +37,7 @@ namespace top
                                         const std::string & _justify_hash);
             void    set_relay_cert_para(uint64_t _clock, uint32_t _viewtoken, uint64_t _viewid, const xvip2_t & _validator, const xvip2_t & _auditor, uint64_t _drand_height,
                                         const std::string & _justify_hash, bool need_relay_prove);
+            void    set_relay_cert_para(uint64_t _clock, uint32_t _viewtoken, uint64_t _viewid, xvqcert_t * cert);
             // some optional parameters
             void    set_extra_data(const std::string & _extra_data) {m_extra_data = _extra_data;}
             uint64_t get_clock() const {return m_clock;}
@@ -68,6 +69,7 @@ namespace top
             uint64_t            m_drand_height{0};
             std::string         m_extra_data;
             std::string         m_justify_cert_hash;
+            std::string         m_verify_signature;
             uint64_t            m_parent_height{0};
             enum_xconsensus_type        m_consensus_type;
             enum_xconsensus_threshold   m_consensus_threshold;
@@ -94,6 +96,7 @@ namespace top
             void    init_header(const xbbuild_para_t & _para);
             void    set_header_extra(const std::string & _extra);
             void    set_header_comments(const std::string & comments);
+            void    set_qcert_verify_signature(const std::string & verify_signature);
 
         public:
             xvheader_t*     get_header() const {return m_header_ptr;}

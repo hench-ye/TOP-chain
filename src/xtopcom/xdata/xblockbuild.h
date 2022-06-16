@@ -128,6 +128,11 @@ class xrelay_block_build_t : public base::xvblockmaker_t {
                           bool need_relay_prove);
      base::xauto_ptr<base::xvblock_t> create_new_block() override;
 };
+class xrelayblock_build_t : public base::xvblockmaker_t {
+ public:
+    xrelayblock_build_t(base::xvblock_t* curr_block, const std::string & relay_block_data, const std::string & relay_wrap_data, const std::string& sign_data);
+    base::xauto_ptr<base::xvblock_t> create_new_block() override;
+};
 
 class xfullunit_build_t : public base::xvblockmaker_t {
  public:

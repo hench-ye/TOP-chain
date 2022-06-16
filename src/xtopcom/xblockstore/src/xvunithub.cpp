@@ -13,6 +13,13 @@
 #include "xdata/xgenesis_data.h"
 
 #include "xmetrics/xmetrics.h"
+#include "xdata/xnative_contract_address.h"
+#include "xdata/xblocktool.h"
+#include "xdata/xtop_relay_block.h"
+#include "xdata/xrelay_block.h"
+#include "xdata/xblockbuild.h"
+#include "xpbase/base/top_utils.h"
+
 #define METRICS_TAG(tag, val) XMETRICS_GAUGE((top::metrics::E_SIMPLE_METRICS_TAG)tag, val)
 
 
@@ -722,6 +729,17 @@ namespace top
                 // return false;
             }
 
+            if (container_account->get_account() == std::string(sys_contract_relay_table_block_addr)) {
+                base::xvaccount_t relay_account(sys_contract_relay_table_block_addr1);
+                xobject_ptr_t<base::xvblock_t> relay_block_ptr = create_relay_block(container_block);
+                if (relay_block_ptr != nullptr) {
+                    if (false == store_block(relay_account, relay_block_ptr.get())) {
+                        xwarn("xvblockstore_impl::store_block fail, %s", sys_contract_relay_table_block_addr);
+                    }
+                } else
+                    xdbg("create_relay_block fail.");
+            }
+
             bool did_stored = ret;//inited as false
             //then try extract for container if that is
             if(  (container_block->get_block_class() == base::enum_xvblock_class_light) //skip nil block
@@ -1351,14 +1369,17 @@ namespace top
             std::string account;
             uint64_t height;
             int ret = load_block_idx_by_hash(hash, account, height);
-            if (ret != 0)
+            if (ret != 0) {
+                xdbg("xvblockstore_impl::get_block_by_hash, load index fail.");
                 return nullptr;
+            }
             
             return load_block_object(account, height, base::enum_xvblock_flag_authenticated, false);
         }
         int xvblockstore_impl::load_block_idx_by_hash(const std::string & hash, std::string & account, uint64_t & height) {
             const std::string key_path = base::xvdbkey_t::create_prunable_blockhash_key(hash);
             std::string block_idx = base::xvchain_t::instance().get_xdbstore()->get_value(key_path);
+            xdbg("xvblockstore_impl::load_block_idx_by_hash, %s", block_idx.c_str());
             std::string::size_type found = block_idx.find("/");
             if (found == std::string::npos)
                 return 1;
@@ -1366,6 +1387,58 @@ namespace top
             height = base::xstring_utl::hex2uint64(block_idx.substr(found + 1));
             xdbg("xtxstoreimpl::load_block_idx_by_hash, %s,%llu", account.c_str(), height);
             return 0;
+        }
+        xobject_ptr_t<base::xvblock_t> xvblockstore_impl::create_relay_block(base::xvblock_t *block_ptr) {
+            if (NULL == block_ptr)
+                return nullptr;
+
+            if ((block_ptr->get_height() % 3) != 0) {
+                xdbg("xvblockstore_impl::create_relay_block not stroe :%s ", block_ptr->dump().c_str());
+                return nullptr;
+            }
+
+            xdbg("xvblockstore_impl::create_relay_block, store txs for block=%s, ", block_ptr->dump().c_str());
+
+            uint64_t height = block_ptr->get_height() / 3 - 1;
+            base::xvaccount_t _table_addr(sys_contract_relay_table_block_addr1);
+            //const std::string block_key = base::xvdbkey_t::create_block_index_key(_table_addr, height);
+
+            top::data::xrelay_block extra_relay_block;
+            std::error_code ec;
+            evm_common::h256 hash;
+            std::string relay_block_data = block_ptr->get_header()->get_extra_data();
+            if (!relay_block_data.empty()) {
+                extra_relay_block.decodeBytes(to_bytes(relay_block_data), ec, true);
+                if (ec) {
+                    xerror("xvblockstore_impl::create_relay_block decodeBytes decodeBytes error %s; err msg %s", ec.category().name(), ec.message().c_str());
+                    return nullptr;
+                }
+                hash = extra_relay_block.get_block_hash();
+                xdbg("xvblockstore_impl::create_relay_block, %s", HexEncode(std::string((char *)hash.data(), hash.size)).c_str());
+            }
+            xobject_ptr_t<base::xvblock_t> relay_block_ptr;
+            if (block_ptr->get_height() == 0) {
+                relay_block_ptr = data::xblocktool_t::create_genesis_empty_block(sys_contract_relay_table_block_addr1);
+                relay_block_ptr->set_block_flag(base::enum_xvblock_flag_authenticated);
+            } else {
+                /*                base::xvblock_t * prev_block_ptr = load_block_object(_table_addr, height, base::enum_xvblock_flag_authenticated, false).get();
+                                if (prev_block_ptr == nullptr) {
+                                    xwarn("xvblockstore_impl::create_relay_block, load block error: %llu", height);
+                                }
+
+                                relay_block_ptr = data::xblocktool_t::create_next_top_relay_block(
+                                    prev_block_ptr, block_ptr,  block_ptr->get_header()->get_extra_data(), block_ptr->get_header()->get_comments(),
+                   block_ptr->get_cert()->get_extend_data());
+                                    */
+                data::xrelayblock_build_t bbuild(block_ptr,  block_ptr->get_header()->get_extra_data(), block_ptr->get_header()->get_comments(),
+                    block_ptr->get_cert()->get_extend_data());
+                relay_block_ptr = bbuild.build_new_block();
+                relay_block_ptr->set_block_flag(base::enum_xvblock_flag_authenticated);
+
+//                data::xtop_relay_block_t * relay_ptr = (data::xtop_relay_block_t *)relay_block_ptr.get();
+//                relay_ptr->set_block_hash(std::string((char *)hash.data(), hash.size));
+            }
+            return relay_block_ptr;
         }
     };//end of namespace of vstore
 };//end of namespace of top

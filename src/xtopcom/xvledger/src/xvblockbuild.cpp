@@ -143,7 +143,18 @@ namespace top
                 m_consensus_flag = base::enum_xconsensus_flag_extend_vote;
             }
         }
-
+        void xbbuild_para_t::set_relay_cert_para(uint64_t _clock, uint32_t _viewtoken, uint64_t _viewid, xvqcert_t * cert) {
+            set_default_qcert();
+            m_clock = _clock;
+            m_viewtoken = _viewtoken;
+            m_viewid = _viewid;
+            m_validator = cert->get_validator();
+            m_auditor = cert->get_validator();
+            m_drand_height = cert->get_drand_height();
+            m_justify_cert_hash = cert->get_justify_cert_hash();
+            m_verify_signature = cert->get_verify_signature();
+            m_consensus_flag = base::enum_xconsensus_flag_extend_vote;
+        }
 
         //----------------------------------------xvblockbuild_t-------------------------------------//
         xvblockbuild_t::xvblockbuild_t() {
@@ -255,7 +266,13 @@ namespace top
             }
             get_header()->set_comments(comments);
         }
-
+        void xvblockbuild_t::set_qcert_verify_signature(const std::string & verify_signature) {
+            if (get_qcert() == nullptr) {
+                xassert(false);
+                return;
+            }
+            get_qcert()->set_verify_signature(verify_signature);
+        }
         xauto_ptr<xvheader_t> xvblockbuild_t::build_proposal_header(xvblock_t* block, uint64_t _clock) {
             xbbuild_para_t _para(block, block->get_block_class(), block->get_block_type());
             _para.m_clock = _clock;

@@ -1067,8 +1067,8 @@ int xrpc_eth_query_manager::get_log(xJson::Value & js_rsp, const uint64_t begin,
 }
 
 xobject_ptr_t<base::xvblock_t> xrpc_eth_query_manager::query_relay_block_by_height(const std::string& table_height) {
-    xdbg("xrpc_eth_query_manager::query_relay_block_by_height: %s, %s", sys_contract_relay_table_block_addr, table_height.c_str());
-    base::xvaccount_t _table_addr(sys_contract_relay_table_block_addr);
+    xdbg("xrpc_eth_query_manager::query_relay_block_by_height: %s, %s", sys_contract_relay_table_block_addr1, table_height.c_str());
+    base::xvaccount_t _table_addr(sys_contract_relay_table_block_addr1);
 
     xobject_ptr_t<base::xvblock_t> _block;
     if (table_height == "latest")
@@ -1079,13 +1079,14 @@ xobject_ptr_t<base::xvblock_t> xrpc_eth_query_manager::query_relay_block_by_heig
         _block = base::xvchain_t::instance().get_xblockstore()->get_latest_cert_block(_table_addr);
     else {
         uint64_t height = std::strtoul(table_height.c_str(), NULL, 16);
-        _block = m_block_store->load_block_object(_table_addr, height * 3, base::enum_xvblock_flag_authenticated, false);
+        _block = m_block_store->load_block_object(_table_addr, height, base::enum_xvblock_flag_authenticated, false);
     }
     return _block;
 }
 
 int xrpc_eth_query_manager::set_relay_block_result(const xobject_ptr_t<base::xvblock_t>& block, xJson::Value & js_rsp, int have_txs) {
     if (block == nullptr) {
+        xdbg("set_relay_block_result, block null.");
         js_rsp["result"] = xJson::Value::null;
         return 1;
     }
@@ -1205,11 +1206,11 @@ void xrpc_eth_query_manager::top_relayBlockNumber(xJson::Value & js_req, xJson::
     if (!eth::EthErrorCode::check_req(js_req, js_rsp, 0))
         return;
 
-    base::xvaccount_t _vaddress(sys_contract_relay_table_block_addr);
+    base::xvaccount_t _vaddress(sys_contract_relay_table_block_addr1);
     uint64_t height = m_block_store->get_latest_cert_block_height(_vaddress);
     xinfo("xarc_query_manager::top_relayBlockNumber: %llu", height);
-    if (height != 0)
-        height = (height-1)/3 + 1;
+//    if (height != 0)
+//        height = (height-1)/3 + 1;
 
     std::stringstream outstr;
     outstr << "0x" << std::hex << height;
@@ -1246,7 +1247,7 @@ void xrpc_eth_query_manager::top_getRelayTransactionByHash(xJson::Value & js_req
         js_rsp["result"] = js_result;
         xdbg("xrpc_eth_query_manager::top_getRelayTransactionByHash ok.tx hash:%s", tx_hash.c_str());
     } else {
-        xwarn("xrpc_eth_query_manager::eth_getTransactionByHash fail-transaction_to_json.tx hash:%s", tx_hash.c_str());
+        xdbg("xrpc_eth_query_manager::eth_getTransactionByHash fail-transaction_to_json.tx hash:%s", tx_hash.c_str());
         js_rsp["result"] = xJson::Value::null;
     }    
     return;

@@ -14,6 +14,8 @@
 #include "xdata/xblockextract.h"
 #include "xvledger/xvtxindex.h"
 #include "xdata/xnative_contract_address.h"
+#include "xdata/xblocktool.h"
+#include "xdata/xtop_relay_block.h"
 
 #ifdef __ALLOW_FORK_LOCK__
     #undef __ALLOW_FORK_LOCK__  // XTODO always allow store multi lock blocks
@@ -1237,7 +1239,7 @@ namespace top
             if (NULL == block_ptr)
                 return false;
 
-            if ((block_ptr->get_height() == 0) || ((block_ptr->get_height() % 3) != 0)) {
+            if (block_ptr->get_height() == 0) {
                 xdbg("xblockacct_t::store_relay_txs not stroe :%s ", block_ptr->dump().c_str());
                 return true;
             }
@@ -1324,8 +1326,9 @@ namespace top
                 }
             }
 
-            if (new_raw_block->get_account() == sys_contract_relay_table_block_addr) {
+            if (new_raw_block->get_account() == sys_contract_relay_table_block_addr1) {
                 store_relay_txs(new_raw_block);
+                //store_relay_block(new_raw_block);
             }
 
             #ifdef DEBUG
