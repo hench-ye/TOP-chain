@@ -1405,8 +1405,7 @@ namespace top
 
             top::data::xrelay_block extra_relay_block;
             std::error_code ec;
-            evm_common::h256 hash;
-            std::string relay_block_data = block_ptr->get_header()->get_extra_data();
+/*            std::string relay_block_data = block_ptr->get_header()->get_extra_data();
             if (!relay_block_data.empty()) {
                 extra_relay_block.decodeBytes(to_bytes(relay_block_data), ec, true);
                 if (ec) {
@@ -1416,6 +1415,13 @@ namespace top
                 hash = extra_relay_block.get_block_hash();
                 xdbg("xvblockstore_impl::create_relay_block, %s", HexEncode(std::string((char *)hash.data(), hash.size)).c_str());
             }
+            data::xblockextract_t::unpack_relayblock(block_ptr, true, extra_relay_block, ec);
+            if (ec) {
+                xwarn("xvblockstore_impl::create_relay_block error, %s; err msg %s", ec.category().name(), ec.message().c_str());
+                return nullptr;
+            }
+            evm_common::h256 hash = extra_relay_block.get_block_hash();*/
+
             xobject_ptr_t<base::xvblock_t> relay_block_ptr;
             if (block_ptr->get_height() == 0) {
                 relay_block_ptr = data::xblocktool_t::create_genesis_empty_block(sys_contract_relay_table_block_addr1);

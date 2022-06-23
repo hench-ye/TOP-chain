@@ -86,14 +86,13 @@ namespace top
             inline const std::string &         get_tx_hash()        const {xassert(m_tx_hash!="");return m_tx_hash;}
             inline enum_transaction_subtype    get_tx_phase_type()  const {return (enum_transaction_subtype)m_tx_phase_type;}
             inline bool                        is_self_tx() const {return m_tx_phase_type == enum_transaction_subtype_self;}
-
             const uint64_t                     get_block_clock()   const;
-        
+            inline const std::string &         get_extra_data()     const {return m_extra_data;}        
         public:
             void set_tx_hash(std::string const & tx_hash);
             void set_block_addr(const std::string & block_addr) {m_block_addr = block_addr;}
             void set_block_height(uint64_t block_height) {m_block_height = block_height;}
-            // void set_tx_phase_type(enum_transaction_subtype tx_phase_type);
+            void set_extra_data(const std::string & extra_data) {m_extra_data = extra_data;}
         protected:
             virtual int32_t    do_write(base::xstream_t & stream) override;
             virtual int32_t    do_read(base::xstream_t & stream) override;
@@ -105,6 +104,7 @@ namespace top
             std::string                 m_tx_hash;      //raw tx 'hash
             uint8_t                     m_tx_phase_type;//refer enum_transaction_subtype
             uint8_t                     m_block_flags;  //refer enum_xvblock_flag,here just stored 8bit to save space
+            std::string                 m_extra_data;
 #ifdef  LONG_CONFIRM_CHECK
             uint64_t                    m_block_clock;  //associated block 'clock
 #endif

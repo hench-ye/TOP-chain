@@ -1101,6 +1101,9 @@ int xrpc_eth_query_manager::set_relay_block_result(const xobject_ptr_t<base::xvb
     }
 
     xbytes_t header_data = relay_block.get_header().streamRLP_header_to_contract();
+    //relay_block.build_finish();
+    evm_common::h256 hash = relay_block.get_block_hash();
+    std::string block_hash = top::to_hex_prefixed(std::string((char*)hash.data(), hash.size));
 
     xJson::Value js_txs;
     js_rsp["result"].append(top::to_hex_prefixed(header_data));
@@ -1117,7 +1120,7 @@ int xrpc_eth_query_manager::set_relay_block_result(const xobject_ptr_t<base::xvb
             continue;
         }
 
-        std::string block_hash = top::to_hex_prefixed(block->get_block_hash());
+        //std::string block_hash = top::to_hex_prefixed(block->get_block_hash());
         std::string block_num = xrpc_eth_parser_t::uint64_to_hex_prefixed(relay_block.get_block_height());
         std::string tx_index = xrpc_eth_parser_t::uint64_to_hex_prefixed(index++);
         xtx_location_t txlocation(block_hash, block_num, tx_hash, tx_index);
@@ -1236,14 +1239,8 @@ void xrpc_eth_query_manager::top_getRelayTransactionByHash(xJson::Value & js_req
     data::xeth_transaction_t eth_transaction;
     data::xeth_store_receipt_t evm_tx_receipt;
     if(true == xrpc_loader_t::load_relay_tx_indx_detail(tx_hash_str, txlocation, eth_transaction, evm_tx_receipt)) {
-
         std::error_code ec;
         xrpc_eth_parser_t::transaction_to_json(txlocation, eth_transaction, js_result, ec);
-        if (ec) {
-            xerror("xrpc_eth_query_manager::eth_getTransactionByHash fail-transaction_to_json.tx hash:%s", tx_hash.c_str());
-            js_rsp["result"] = xJson::Value::null;
-            return;
-        }
         js_rsp["result"] = js_result;
         xdbg("xrpc_eth_query_manager::top_getRelayTransactionByHash ok.tx hash:%s", tx_hash.c_str());
     } else {

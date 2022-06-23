@@ -166,7 +166,7 @@ namespace top
             stream.write_compact_var(m_block_addr);
             stream.write_compact_var(m_block_height);
             stream.write_compact_var(m_block_hash);
-            stream.write_compact_var(std::string{""});
+            stream.write_compact_var(m_extra_data);
 
             stream << m_tx_phase_type;
             stream << m_block_flags;
@@ -183,8 +183,7 @@ namespace top
             stream.read_compact_var(m_block_addr);
             stream.read_compact_var(m_block_height);
             stream.read_compact_var(m_block_hash);
-            std::string _str{""};
-            stream.read_compact_var(_str);
+            stream.read_compact_var(m_extra_data);
 
             stream >> m_tx_phase_type;
             stream >> m_block_flags;

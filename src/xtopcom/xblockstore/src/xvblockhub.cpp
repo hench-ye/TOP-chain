@@ -16,6 +16,7 @@
 #include "xdata/xnative_contract_address.h"
 #include "xdata/xblocktool.h"
 #include "xdata/xtop_relay_block.h"
+#include "xpbase/base/top_utils.h"
 
 #ifdef __ALLOW_FORK_LOCK__
     #undef __ALLOW_FORK_LOCK__  // XTODO always allow store multi lock blocks
@@ -569,6 +570,7 @@ namespace top
 
         base::xvbindex_t*  xblockacct_t::query_index(const uint64_t height, const std::string & blockhash)
         {
+            xdbg("xblockacct_t::query_index, %d", m_all_blocks.size());
             if(false == m_all_blocks.empty())
             {
                 auto height_it = m_all_blocks.find(height);
@@ -577,11 +579,13 @@ namespace top
                     auto & view_map  = height_it->second;
                     for(auto view_it = view_map.rbegin(); view_it != view_map.rend(); ++view_it) //search from highest view#
                     {
-                        if(blockhash == view_it->second->get_block_hash())
+                        if(blockhash == view_it->second->get_cache_block_hash())
                         {
                             view_it->second->add_ref();
+                            xdbg("xblockacct_t::query_index, hash check succ: %s,%s", HexEncode(blockhash).c_str(), HexEncode(view_it->second->get_cache_block_hash()).c_str());
                             return view_it->second;
                         }
+                        xdbg("xblockacct_t::query_index, hash check fail: %s,%s", HexEncode(blockhash).c_str(), HexEncode(view_it->second->get_cache_block_hash()).c_str());
                     }
                 }
             }
@@ -1254,6 +1258,11 @@ namespace top
                 ec.category().name(), ec.message().c_str());
                 return false;
             }
+            extra_relay_block.build_finish();
+            evm_common::h256 hash = extra_relay_block.get_block_hash();
+            std::string block_hash_str((char*)hash.data(), hash.size);
+            block_ptr->set_vote_extend_data(block_hash_str);
+            xdbg("xblockacct_t::store_relay_txs, hash:%s", HexEncode(block_hash_str).c_str());
    
             //get tx hash from txs
             std::vector<base::xvtxindex_ptr> sub_txs;
@@ -1264,10 +1273,10 @@ namespace top
                 }
                 std::string tx_hash = std::string(reinterpret_cast<char*>(tx.get_tx_hash().data()), tx.get_tx_hash().size());
                 base::xvtxindex_ptr tx_index = make_object_ptr<base::xvtxindex_t>(*block_ptr, tx_hash, base::enum_transaction_subtype_send);
+                tx_index->set_extra_data(block_hash_str);
                 sub_txs.push_back(tx_index);           
-                xinfo("xblockacct_t::store_relay_txs tx_hash:%s, account: %s, height:%llu ",  base::xstring_utl::to_hex(tx_hash).c_str(), 
+                xinfo("xblockacct_t::store_relay_txs tx_hash:%s, account: %s, height:%llu",  base::xstring_utl::to_hex(tx_hash).c_str(), 
                      block_ptr->get_account().c_str(), block_ptr->get_height());
-            
             }
 
             bool has_error = false;
@@ -1279,19 +1288,17 @@ namespace top
                 xassert(!tx_bin.empty());
 
                 if (base::xvchain_t::instance().get_xdbstore()->set_value(tx_key, tx_bin) == false) {
-                    xerror("xvtxstore_t::store_relay_txs,fail to store tx for block(%s)", block_ptr->dump().c_str());
+                    xerror("xblockacct_t::store_relay_txs,fail to store tx for block(%s)", block_ptr->dump().c_str());
                     has_error = true;  // mark it but let do rest work
                 } else {
-                    xinfo("xvtxstore_t::store_relay_txs,store tx to DB for block=%s,tx=%s",
-                    block_ptr->dump().c_str(),
+                    xdbg("xblockacct_t::store_relay_txs,store tx: %s",
                     base::xvtxkey_t::transaction_hash_subtype_to_string(v->get_tx_hash(), v->get_tx_phase_type()).c_str());
                 }
 
                 // test 
                 const std::string tx_bin_result = base::xvchain_t::instance().get_xdbstore()->get_value(tx_key);
                 if (!tx_bin_result.empty()) {
-                    xinfo("xvtxstore_t::store_relay_txs, check save hahs_tx=%s and %s", 
-                     base::xstring_utl::to_hex(v->get_tx_hash()).c_str(), tx_bin_result.c_str());
+                    xdbg("xblockacct_t::store_relay_txs, check save hahs_tx=%s", base::xstring_utl::to_hex(v->get_tx_hash()).c_str());
                 }
             }
             if (has_error)
@@ -2213,7 +2220,7 @@ namespace top
                            && (it->second->check_block_flag(base::enum_xvblock_flag_committed)) )
                         {
                             if(   (new_index->get_viewid() != it->second->get_viewid())
-                               || (new_index->get_block_hash() != it->second->get_block_hash()) )
+                               || (new_index->get_block_hash() != it->second->get_cache_block_hash()) )
                             {
                                 xerror("xblockacct_t::precheck_new_index,error-try fork by new block(%s) vs existing commit block(%s)",new_index->dump().c_str(),it->second->dump().c_str());
                                 return false;
@@ -2267,7 +2274,7 @@ namespace top
                     for(auto it = height_view_map.begin(); it != height_view_map.end();++it)
                     {
                         if(   (it->second->get_height() == new_raw_block->get_height())
-                           && (it->second->get_block_hash() == new_raw_block->get_block_hash())  )
+                           && (it->second->get_cache_block_hash() == new_raw_block->get_block_hash())  )
                         {
                             it->second->set_block_flag(base::enum_xvblock_flag_unpacked);
                             break;
@@ -2470,9 +2477,15 @@ namespace top
             if(this_index->check_modified_flag() == false)//nothing changed
                 return true;
 
-            const std::string key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(this_index->get_block_hash());
+            const std::string key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(this_index->get_cache_block_hash());
+/*            std::string key_path2;
+            if (this_index->get_account() == sys_contract_relay_table_block_addr1)
+                key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(this_index->get_extend_data());
+            else
+                key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(this_index->get_block_hash());*/
             base::xvchain_t::instance().get_xdbstore()->set_value(key_path2, this_index->get_account() + "/" + base::xstring_utl::uint642hex(this_index->get_height()));
-            xdbg("xtablebkplugin::write_index: %s", this_index->get_account().c_str());
+            xdbg("xtablebkplugin::write_index: %s, %s, %s", this_index->get_account().c_str(), HexEncode(this_index->get_extend_data()).c_str(),
+                HexEncode(this_index->get_block_hash()).c_str());
 
             return get_blockdb_ptr()->write_index_to_db(this_index);
         }

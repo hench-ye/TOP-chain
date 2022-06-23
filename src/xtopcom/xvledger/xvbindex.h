@@ -5,6 +5,7 @@
 #pragma once
 
 #include "xvblock.h"
+#include "xdata/xnative_contract_address.h"
 
 #ifndef STORE_UNIT_BLOCK
 #define STORE_UNIT_BLOCK
@@ -51,6 +52,11 @@ namespace top
             inline const uint64_t       get_viewid()  const {return m_block_viewid;}
             inline const uint64_t       get_viewtoken()  const {return m_block_viewtoken;}
             inline const std::string &  get_block_hash()      const {return m_block_hash;}
+            inline const std::string &  get_cache_block_hash()      const {
+                if (get_account() == sys_contract_relay_table_block_addr1)
+                    return m_extend_data;
+                return m_block_hash;
+            }
             inline const std::string &  get_last_block_hash() const {return m_last_block_hash;}
             inline const uint64_t       get_last_full_block_height()  const {return m_last_fullblock_height;}
             

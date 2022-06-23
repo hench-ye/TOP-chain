@@ -267,10 +267,10 @@ void xrpc_eth_parser_t::receipt_to_json(xtx_location_t const& txlocation,  data:
 
     if (!evm_tx_receipt.get_logs().empty()) {
         std::string block_hash = txlocation.m_block_hash; //top::to_hex_prefixed(txlocation.m_block_hash);
-        std::string block_num = uint64_to_hex_prefixed((uint64_t)base::xstring_utl::touint64(txlocation.m_block_number));
+        //std::string block_num = uint64_to_hex_prefixed((uint64_t)base::xstring_utl::touint64(txlocation.m_block_number));
         std::string tx_idx = uint64_to_hex_prefixed((uint64_t)base::xstring_utl::touint64(txlocation.m_transaction_index));
 
-        xlog_location_t loglocation(block_hash, block_num, txlocation.m_tx_hash, tx_idx);
+        xlog_location_t loglocation(block_hash, txlocation.m_block_number, txlocation.m_tx_hash, tx_idx);
         uint64_t index = 0;
         for (auto & log : evm_tx_receipt.get_logs()) {
             loglocation.m_log_index = uint64_to_hex_prefixed(index);

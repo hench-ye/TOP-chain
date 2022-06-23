@@ -6,7 +6,8 @@
 #include <cinttypes>
 #include "../xvbindex.h"
 #include "../xvaccount.h"
- #include "xmetrics/xmetrics.h"
+#include "xmetrics/xmetrics.h"
+#include "xdata/xnative_contract_address.h"
 namespace top
 {
     namespace base
@@ -34,7 +35,8 @@ namespace top
             m_parent_block_viewid   = obj.get_parent_block_viewid();
             m_parent_block_entity_id = obj.get_parent_entity_id();
             // m_extend_cert = obj.get_cert()->get_extend_cert();  XTODO not set extend cert and extend data
-            // m_extend_data = obj.get_cert()->get_extend_data();
+            if (obj.get_account() == sys_contract_relay_table_block_addr1)
+                m_extend_data = obj.get_vote_extend_data();
 
             //copy flags of block,and combine class of block
             //[8bit:block-flags][8bit:index-bits]
