@@ -44,7 +44,29 @@ namespace top
             m_block_types       = obj.get_header()->get_block_raw_types();
             XMETRICS_GAUGE_DATAOBJECT(metrics::dataobject_xvbindex_t, 1);
         }
+        xvbindex_t::xvbindex_t(xvblock_t & obj, enum_index_store_flag flag)
+            :xvaccount_t(obj.get_account())
+        {
+            init();
 
+            m_block_height          = obj.get_height();
+            m_block_viewid          = obj.get_viewid();
+            m_block_viewtoken       = obj.get_viewtoken();
+            m_block_hash            = obj.get_block_hash();
+            m_last_block_hash       = obj.get_last_block_hash();
+            m_last_fullblock_hash   = obj.get_last_full_block_hash();
+            m_last_fullblock_height = obj.get_last_full_block_height();
+
+            m_parent_block_height   = obj.get_parent_block_height();
+            m_parent_block_viewid   = obj.get_parent_block_viewid();
+            m_parent_block_entity_id = obj.get_parent_entity_id();
+            if (flag == enum_index_store_flag_relay_block)
+                m_extend_data = obj.get_vote_extend_data();
+
+            m_combineflags      = obj.get_block_flags();
+            m_block_types       = obj.get_header()->get_block_raw_types();
+            XMETRICS_GAUGE_DATAOBJECT(metrics::dataobject_xvbindex_t, 1);
+        }
         xvbindex_t::xvbindex_t(xvbindex_t && obj)
             :xvaccount_t(obj)
         {

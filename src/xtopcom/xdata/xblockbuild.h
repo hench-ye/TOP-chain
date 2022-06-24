@@ -130,7 +130,9 @@ class xrelay_block_build_t : public base::xvblockmaker_t {
 };
 class xrelayblock_build_t : public base::xvblockmaker_t {
  public:
-    xrelayblock_build_t(base::xvblock_t* curr_block, const std::string & relay_block_data, const std::string & relay_wrap_data, const std::string& sign_data);
+    xrelayblock_build_t(base::xvblock_t* curr_block, const std::string & relay_block_data, const std::string & relay_wrap_data,
+        const std::string& sign_data, const uint64_t& block_height);
+    xrelayblock_build_t(const std::string & relay_block_data);
     base::xauto_ptr<base::xvblock_t> create_new_block() override;
 };
 

@@ -1388,61 +1388,50 @@ namespace top
             xdbg("xtxstoreimpl::load_block_idx_by_hash, %s,%llu", account.c_str(), height);
             return 0;
         }
-        xobject_ptr_t<base::xvblock_t> xvblockstore_impl::create_relay_block(base::xvblock_t *block_ptr) {
+        xobject_ptr_t<base::xvblock_t> xvblockstore_impl::create_relay_block(base::xvblock_t * block_ptr) {
             if (NULL == block_ptr)
                 return nullptr;
 
-            if ((block_ptr->get_height() % 3) != 0) {
-                xdbg("xvblockstore_impl::create_relay_block not stroe :%s ", block_ptr->dump().c_str());
+            std::error_code ec;
+            data::xrelay_block relay_block;
+            data::xblockextract_t::unpack_relayblock(block_ptr, false, relay_block, ec);
+            if (ec) {
+                xwarn("xvblockstore_impl::create_relay_block fail. unpack relayblock error %s, msg %s", ec.category().name(), ec.message().c_str());
+                return nullptr;
+            }
+            data::xtableheader_extra_t header_extra;
+            auto extra_str = block_ptr->get_header()->get_extra_data();
+            auto ret = header_extra.deserialize_from_string(extra_str);
+            if (ret <= 0) {
+                xwarn("xrelay_proposal_maker_t::make_proposal header extra data deserialize fail.");
+                return nullptr;
+            }
+
+            auto wrap_data = header_extra.get_relay_wrap_info();
+            if (wrap_data.empty()) {
+                xwarn("xrelay_proposal_maker_t::make_proposal wrap data should not empty.");
+                return nullptr;
+            }
+
+            data::xrelay_wrap_info_t wrap_info;
+            wrap_info.serialize_from_string(wrap_data);
+            uint8_t wrap_phase = wrap_info.get_wrap_phase();
+            if (wrap_phase != 2) {
+                xdbg("xvblockstore_impl::create_relay_block not stroe :%s ,%d", block_ptr->dump().c_str(), wrap_phase);
                 return nullptr;
             }
 
             xdbg("xvblockstore_impl::create_relay_block, store txs for block=%s, ", block_ptr->dump().c_str());
-
-            uint64_t height = block_ptr->get_height() / 3 - 1;
-            base::xvaccount_t _table_addr(sys_contract_relay_table_block_addr1);
-            //const std::string block_key = base::xvdbkey_t::create_block_index_key(_table_addr, height);
-
-            top::data::xrelay_block extra_relay_block;
-            std::error_code ec;
-/*            std::string relay_block_data = block_ptr->get_header()->get_extra_data();
-            if (!relay_block_data.empty()) {
-                extra_relay_block.decodeBytes(to_bytes(relay_block_data), ec, true);
-                if (ec) {
-                    xerror("xvblockstore_impl::create_relay_block decodeBytes decodeBytes error %s; err msg %s", ec.category().name(), ec.message().c_str());
-                    return nullptr;
-                }
-                hash = extra_relay_block.get_block_hash();
-                xdbg("xvblockstore_impl::create_relay_block, %s", HexEncode(std::string((char *)hash.data(), hash.size)).c_str());
-            }
-            data::xblockextract_t::unpack_relayblock(block_ptr, true, extra_relay_block, ec);
-            if (ec) {
-                xwarn("xvblockstore_impl::create_relay_block error, %s; err msg %s", ec.category().name(), ec.message().c_str());
-                return nullptr;
-            }
-            evm_common::h256 hash = extra_relay_block.get_block_hash();*/
 
             xobject_ptr_t<base::xvblock_t> relay_block_ptr;
             if (block_ptr->get_height() == 0) {
                 relay_block_ptr = data::xblocktool_t::create_genesis_empty_block(sys_contract_relay_table_block_addr1);
                 relay_block_ptr->set_block_flag(base::enum_xvblock_flag_authenticated);
             } else {
-                /*                base::xvblock_t * prev_block_ptr = load_block_object(_table_addr, height, base::enum_xvblock_flag_authenticated, false).get();
-                                if (prev_block_ptr == nullptr) {
-                                    xwarn("xvblockstore_impl::create_relay_block, load block error: %llu", height);
-                                }
-
-                                relay_block_ptr = data::xblocktool_t::create_next_top_relay_block(
-                                    prev_block_ptr, block_ptr,  block_ptr->get_header()->get_extra_data(), block_ptr->get_header()->get_comments(),
-                   block_ptr->get_cert()->get_extend_data());
-                                    */
                 data::xrelayblock_build_t bbuild(block_ptr,  block_ptr->get_header()->get_extra_data(), block_ptr->get_header()->get_comments(),
-                    block_ptr->get_cert()->get_extend_data());
+                    block_ptr->get_cert()->get_extend_data(), relay_block.get_block_height());
                 relay_block_ptr = bbuild.build_new_block();
                 relay_block_ptr->set_block_flag(base::enum_xvblock_flag_authenticated);
-
-//                data::xtop_relay_block_t * relay_ptr = (data::xtop_relay_block_t *)relay_block_ptr.get();
-//                relay_ptr->set_block_hash(std::string((char *)hash.data(), hash.size));
             }
             return relay_block_ptr;
         }

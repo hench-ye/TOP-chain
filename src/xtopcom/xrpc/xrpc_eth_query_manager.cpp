@@ -1096,7 +1096,7 @@ int xrpc_eth_query_manager::set_relay_block_result(const xobject_ptr_t<base::xvb
     data::xblockextract_t::unpack_relayblock(block.get(), true, relay_block, ec);
     if (ec) {
         js_rsp["result"] = xJson::Value::null;
-        xerror("xrpc_eth_query_manager::set_relay_block_result, fail-unpack relayblock.error %s; err msg %s", ec.category().name(), ec.message().c_str());
+        xwarn("xrpc_eth_query_manager::set_relay_block_result, fail-unpack relayblock.error %s; err msg %s", ec.category().name(), ec.message().c_str());
         return 1;
     }
 
@@ -1174,7 +1174,7 @@ void xrpc_eth_query_manager::top_getRelayBlockByNumber(xJson::Value & js_req, xJ
     if (!eth::EthErrorCode::check_hex(js_req[0].asString(), js_rsp, 0, eth::enum_rpc_type_block))
         return;
 
-    if (std::strtoul(js_req[0].asString().c_str(), NULL, 16) == 0) {
+/*    if (std::strtoul(js_req[0].asString().c_str(), NULL, 16) == 0) {
         uint64_t epochID = 0;
         evm_common::h256 prev_hash;
         data::xrelay_block relay_block(prev_hash, 0, epochID, 0);
@@ -1185,7 +1185,7 @@ void xrpc_eth_query_manager::top_getRelayBlockByNumber(xJson::Value & js_req, xJ
         xJson::Value js_result;
         js_rsp["result"] = top::to_hex_prefixed(rlp_stream);
         return;
-    }
+    }*/
 
     int have_txs = 0;
     if (js_req.size() >= 2){
@@ -1194,9 +1194,7 @@ void xrpc_eth_query_manager::top_getRelayBlockByNumber(xJson::Value & js_req, xJ
             eth::EthErrorCode::deal_error(js_rsp, eth::enum_eth_rpc_parse_error, msg);
             return;
         }
-        if (!js_req[1].isBool()){
-            have_txs = 0;
-        } if (js_req[1].asBool())
+        if (js_req[1].asBool())
             have_txs = 2;
         else
             have_txs = 1;
