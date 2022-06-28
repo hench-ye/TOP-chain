@@ -199,7 +199,7 @@ void xblockextract_t::unpack_relayblock(base::xvblock_t* _block, bool include_si
         std::string sign_list = _block->get_cert()->get_extend_data();
         if (sign_list.empty()) {
             ec = common::error::xerrc_t::invalid_block;
-            xerror("xblockextract_t::unpack_relayblock extend data empty.");
+            xwarn("xblockextract_t::unpack_relayblock extend data empty.");
             return;
         }
         std::vector<xrelay_signature_node_t> signature_nodes;

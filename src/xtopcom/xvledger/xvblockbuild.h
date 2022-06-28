@@ -97,7 +97,6 @@ namespace top
             void    init_header(const xbbuild_para_t & _para);
             void    set_header_extra(const std::string & _extra);
             void    set_header_comments(const std::string & comments);
-            void    set_qcert_verify_signature(const std::string & verify_signature);
 
         public:
             xvheader_t*     get_header() const {return m_header_ptr;}

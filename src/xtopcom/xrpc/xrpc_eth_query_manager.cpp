@@ -1093,7 +1093,10 @@ int xrpc_eth_query_manager::set_relay_block_result(const xobject_ptr_t<base::xvb
 
     std::error_code ec;
     data::xrelay_block relay_block;
-    data::xblockextract_t::unpack_relayblock(block.get(), true, relay_block, ec);
+    if (block->get_height() == 0)
+        data::xblockextract_t::unpack_relayblock(block.get(), false, relay_block, ec);
+    else
+        data::xblockextract_t::unpack_relayblock(block.get(), true, relay_block, ec);
     if (ec) {
         js_rsp["result"] = xJson::Value::null;
         xwarn("xrpc_eth_query_manager::set_relay_block_result, fail-unpack relayblock.error %s; err msg %s", ec.category().name(), ec.message().c_str());

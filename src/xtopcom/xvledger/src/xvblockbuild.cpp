@@ -274,13 +274,7 @@ namespace top
             }
             get_header()->set_comments(comments);
         }
-        void xvblockbuild_t::set_qcert_verify_signature(const std::string & verify_signature) {
-            if (get_qcert() == nullptr) {
-                xassert(false);
-                return;
-            }
-            get_qcert()->set_verify_signature(verify_signature);
-        }
+
         xauto_ptr<xvheader_t> xvblockbuild_t::build_proposal_header(xvblock_t* block, uint64_t _clock) {
             xbbuild_para_t _para(block, block->get_block_class(), block->get_block_type());
             _para.m_clock = _clock;

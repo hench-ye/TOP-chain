@@ -388,8 +388,14 @@ base::xauto_ptr<base::xvblock_t> xtop_genesis_manager::create_genesis_of_relay_a
     xbytes_t rlp_genesis_block_header_data = _relay_block->encodeBytes(false);
     std::string data((char*)rlp_genesis_block_header_data.data(), rlp_genesis_block_header_data.size());
     data::xemptyblock_build_t bbuild(sys_contract_relay_table_block_addr1);
-    bbuild.set_header_extra(data);
-    xdbg("create_genesis_of_relay_account, %d, %s", data.size(), top::HexEncode(data).c_str());
+
+    data::xtableheader_extra_t header_extra_src;
+    header_extra_src.set_relay_block_data(data);
+    std::string extra_data;
+    header_extra_src.serialize_to_string(extra_data);
+
+    bbuild.set_header_extra(extra_data);
+    xdbg("create_genesis_of_relay_account, %d, %s", extra_data.size(), top::HexEncode(extra_data).c_str());
     base::xauto_ptr<base::xvblock_t> _new_block = bbuild.build_new_block();
     return _new_block;
 }

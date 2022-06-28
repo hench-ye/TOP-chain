@@ -27,7 +27,6 @@ namespace top
             enum_index_store_flag_transactions    = 0x40, //mark txs of this block has been decode and stored seperately
             enum_index_store_flag_full_block      = 0x7F, //mark when every piece of block been on DB
             enum_index_store_flag_main_entry      = 0x80, //indicate that is main entry of mutiple blocks
-            enum_index_store_flag_relay_block      = 0x80, //relay block
             enum_index_store_flags_mask           = 0xFF, //Mask to keep them
             //note:all bit has been used up, not allow add more
         };
@@ -41,7 +40,6 @@ namespace top
         public:
             xvbindex_t();
             xvbindex_t(xvblock_t & block_obj);
-            xvbindex_t(xvblock_t & block_obj, enum_index_store_flag flag);
             xvbindex_t(xvbindex_t && obj);
             xvbindex_t(const xvbindex_t & obj);
             xvbindex_t & operator = (const xvbindex_t & obj);
@@ -67,6 +65,7 @@ namespace top
 
             inline const std::string &  get_extend_cert()      const {return m_extend_cert;}
             inline const std::string &  get_extend_data()      const {return m_extend_data;}
+            inline void                 set_extend_data(const std::string& data) { m_extend_data = data;}
 
             inline enum_xvblock_level   get_block_level()  const {return xvheader_t::cal_block_level(m_block_types);}
             inline enum_xvblock_class   get_block_class()  const {return xvheader_t::cal_block_class(m_block_types);}
