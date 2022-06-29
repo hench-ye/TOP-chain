@@ -139,7 +139,7 @@ namespace top
             bool                push_event(enum_blockstore_event type,base::xvbindex_t* target);
             void                update_bindex(base::xvbindex_t* this_block);
             void                update_bindex_to_committed(base::xvbindex_t* this_block);
-            const std::string   get_cache_block_hash(base::xvbindex_t* index_ptr);
+            //const std::string   get_cache_block_hash(base::xvbindex_t* index_ptr);
         private:
             virtual bool        init_meta(const base::xvactmeta_t & meta) override;
             bool                recover_meta(const base::xvactmeta_t & _meta);//recover at plugin level if possible;

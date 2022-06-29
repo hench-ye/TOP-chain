@@ -567,13 +567,13 @@ namespace top
             }
             return nullptr;
         }
-        const std::string xblockacct_t::get_cache_block_hash(base::xvbindex_t* index_ptr) {
+/*        const std::string xblockacct_t::get_cache_block_hash(base::xvbindex_t* index_ptr) {
             if (index_ptr == nullptr)
                 return "";
             if (get_account() == sys_contract_relay_table_block_addr1)
                 return index_ptr->get_extend_data();
             return index_ptr->get_block_hash();
-        }
+        }*/
         base::xvbindex_t*  xblockacct_t::query_index(const uint64_t height, const std::string & blockhash)
         {
             xdbg("xblockacct_t::query_index, %d", m_all_blocks.size());
@@ -585,13 +585,14 @@ namespace top
                     auto & view_map  = height_it->second;
                     for(auto view_it = view_map.rbegin(); view_it != view_map.rend(); ++view_it) //search from highest view#
                     {
-                        if(blockhash == get_cache_block_hash(view_it->second))
+                        //if(blockhash == get_cache_block_hash(view_it->second))
+                        if(blockhash == view_it->second->get_block_hash())
                         {
                             view_it->second->add_ref();
-                            xdbg("xblockacct_t::query_index, hash check succ: %s,%s", HexEncode(blockhash).c_str(), HexEncode(get_cache_block_hash(view_it->second)).c_str());
+                            xdbg("xblockacct_t::query_index, hash check succ: %s,%s", HexEncode(blockhash).c_str(), HexEncode(view_it->second->get_block_hash()).c_str());
                             return view_it->second;
                         }
-                        xdbg("xblockacct_t::query_index, hash check fail: %s,%s", HexEncode(blockhash).c_str(), HexEncode(get_cache_block_hash(view_it->second)).c_str());
+                        xdbg("xblockacct_t::query_index, hash check fail: %s,%s", HexEncode(blockhash).c_str(), HexEncode(view_it->second->get_block_hash()).c_str());
                     }
                 }
             }
@@ -2156,7 +2157,8 @@ namespace top
                            && (it->second->check_block_flag(base::enum_xvblock_flag_committed)) )
                         {
                             if(   (new_index->get_viewid() != it->second->get_viewid())
-                               || (new_index->get_block_hash() != get_cache_block_hash(it->second)) )
+                               //|| (new_index->get_block_hash() != get_cache_block_hash(it->second)) )
+                               || (new_index->get_block_hash() != it->second->get_block_hash()) )
                             {
                                 xerror("xblockacct_t::precheck_new_index,error-try fork by new block(%s) vs existing commit block(%s)",new_index->dump().c_str(),it->second->dump().c_str());
                                 return false;
@@ -2210,7 +2212,8 @@ namespace top
                     for(auto it = height_view_map.begin(); it != height_view_map.end();++it)
                     {
                         if(   (it->second->get_height() == new_raw_block->get_height())
-                           && (get_cache_block_hash(it->second) == new_raw_block->get_block_hash())  )
+                           //&& (get_cache_block_hash(it->second) == new_raw_block->get_block_hash())  )
+                           && (it->second->get_block_hash() == new_raw_block->get_block_hash())  )
                         {
                             it->second->set_block_flag(base::enum_xvblock_flag_unpacked);
                             break;
@@ -2414,7 +2417,8 @@ namespace top
             if(this_index->check_modified_flag() == false)//nothing changed
                 return true;
 
-            const std::string key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(get_cache_block_hash(this_index));
+            //const std::string key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(get_cache_block_hash(this_index));
+            const std::string key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(this_index->get_block_hash());
             base::xvchain_t::instance().get_xdbstore()->set_value(key_path2, this_index->get_account() + "/" + base::xstring_utl::uint642hex(this_index->get_height()));
             xdbg("xtablebkplugin::write_index: %s, %s, %s", this_index->get_account().c_str(), HexEncode(this_index->get_extend_data()).c_str(),
                 HexEncode(this_index->get_block_hash()).c_str());
@@ -2728,17 +2732,21 @@ namespace top
             evm_common::h256 hash = extra_relay_block.get_block_hash();
             std::string block_hash_str((char*)hash.data(), hash.size);
 
-            new_index->set_extend_data(block_hash_str);
+//            new_index->set_extend_data(block_hash_str);
+            new_index->set_block_hash(block_hash_str);
             return new_index;
         }
         std::vector<base::xvbindex_t*> xrelay_plugin::read_index(const uint64_t target_height) {
             return get_blockdb_ptr()->read_index_from_db(*get_account_obj(),target_height);
         }
         bool xrelay_plugin::write_index(base::xvbindex_t * this_index) {
-            if(this_index->check_modified_flag() == false)//nothing changed
-                return true;
+            if(this_index->check_modified_flag() == false) {//nothing changed
+                //return true;
+                xdbg("xrelay_plugin::write_index, check_modified_flag fail.");
+            }
 
-            const std::string key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(get_cache_block_hash(this_index));
+            //const std::string key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(get_cache_block_hash(this_index));
+            const std::string key_path2 = base::xvdbkey_t::create_prunable_blockhash_key(this_index->get_block_hash());
             base::xvchain_t::instance().get_xdbstore()->set_value(key_path2, this_index->get_account() + "/" + base::xstring_utl::uint642hex(this_index->get_height()));
             xdbg("xrelay_plugin::write_index: %s, %s, %s", this_index->get_account().c_str(), HexEncode(this_index->get_extend_data()).c_str(),
                 HexEncode(this_index->get_block_hash()).c_str());
