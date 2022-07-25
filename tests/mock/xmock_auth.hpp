@@ -7,6 +7,7 @@
 #include "xvledger/xvblock.h"
 #include "xbase/xutl.h"
 
+using namespace top::base;
 namespace top { namespace mock {
 
 class xmock_auth_t : public base::xvcertauth_t {
