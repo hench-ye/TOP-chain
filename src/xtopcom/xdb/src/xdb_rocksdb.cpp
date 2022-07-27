@@ -94,8 +94,8 @@ bool xdb_rocksdb_transaction_t::read(const std::string& key, std::string& value)
     }
     
     rocksdb::ReadOptions target_opt = rocksdb::ReadOptions();
-    target_opt.ignore_range_deletions = true; //ignored deleted_ranges to improve read performance
-    target_opt.verify_checksums = false; //application has own checksum
+    //target_opt.ignore_range_deletions = true; //ignored deleted_ranges to improve read performance
+    //target_opt.verify_checksums = false; //application has own checksum
     
     rocksdb::Status s = m_txn->Get(target_opt, rocksdb::Slice(key), &value);
     if (!s.ok()) {
@@ -438,7 +438,7 @@ bool xdb::xdb_impl::open()
 {
     if (m_db == nullptr)
     {
-        std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
+/*        std::vector<rocksdb::ColumnFamilyDescriptor> column_families;
         for(auto it : m_cf_configs)
         {
             column_families.push_back(rocksdb::ColumnFamilyDescriptor(it.cf_name,it.cf_option));
@@ -501,7 +501,18 @@ bool xdb::xdb_impl::open()
             const string errmsg = "[xdb] rocksDB error: " + s.ToString() + " ,db name " + m_db_name;
             xerror("%s", errmsg.c_str());
             printf("%s\n",errmsg.c_str());
+        }*/
+        rocksdb::Status s;
+        if((m_db_kinds & xdb_kind_readonly) != 0)
+        {
+            s = rocksdb::DB::OpenForReadOnly(m_options, m_db_name, &m_db);
         }
+        else
+        {
+            s = rocksdb::DB::Open(m_options, m_db_name,  &m_db);
+        }
+        
+        handle_error(s);
         return s.ok();
     }
     return true;
@@ -538,7 +549,7 @@ bool xdb::xdb_impl::close()
 //db_kinds refer to xdb_kind_t
 xdb::xdb_impl::xdb_impl(const int db_kinds,const std::string& db_root_dir,std::vector<xdb_path_t> & db_paths)
 {
-    m_db_kinds = db_kinds;
+/*    m_db_kinds = db_kinds;
     m_cf_handles.clear();
     m_cf_handles.resize(256); //static mapping each 'char' -> handles
     for(size_t i = 0; i < m_cf_handles.size(); ++i)
@@ -605,7 +616,23 @@ xdb::xdb_impl::xdb_impl(const int db_kinds,const std::string& db_root_dir,std::v
     }
     
     m_cf_configs = cf_list;
-    
+    */
+    xkinfo("xdb_impl::init,db_root_dir=%s,memory Totalram %llu, Available: %llu.cache_type:%d",db_root_dir.c_str(), total_ram, free_ram, cache_type);
+    m_db_name = db_root_dir;
+    //xdb::xdb_impl::setup_default_db_options(m_options,m_db_kinds);//setup base options first
+    if(db_paths.empty() == false)
+    {
+        for(auto it : db_paths)
+        {
+            rocksdb::DbPath rocksdb_path;
+            rocksdb_path.path        = it.path;
+            rocksdb_path.target_size = it.target_size;
+            m_options.db_paths.push_back(rocksdb_path);
+            
+            xkinfo("xdb_impl::init,the customized data_path=%s and target_size=%lld",it.path.c_str(),(long long int)it.target_size);
+            printf("xdb_impl::init,the customized data_path=%s and target_size=%lld \n",it.path.c_str(),(long long int)it.target_size);
+        }
+    }   
     open();
 }
 
@@ -687,10 +714,10 @@ bool xdb::xdb_impl::read(const std::string& key, std::string& value) const {
     rocksdb::ColumnFamilyHandle* target_cf = get_cf_handle(key);
     
     rocksdb::ReadOptions target_opt = rocksdb::ReadOptions();
-    target_opt.ignore_range_deletions = true; //ignored deleted_ranges to improve read performance
-    target_opt.verify_checksums = false; //application has own checksum
+    //target_opt.ignore_range_deletions = true; //ignored deleted_ranges to improve read performance
+    //target_opt.verify_checksums = false; //application has own checksum
     
-    rocksdb::Status s = m_db->Get(target_opt, target_cf, rocksdb::Slice(key), &value);
+    rocksdb::Status s = m_db->Get(target_opt, rocksdb::Slice(key), &value);
     if (!s.ok()) {
         if (s.IsNotFound()) {
             return false;

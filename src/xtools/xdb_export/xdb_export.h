@@ -43,7 +43,7 @@ public:
     // query balance info
     void query_balance();
     // query archive db integrity and continuity
-    void query_archive_db(const uint32_t redundancy);
+    void query_archive_db(const uint32_t redundancy, const uint32_t thread_num);
     // query checkpoint
     void query_checkpoint(const uint64_t clock);
     // set folder

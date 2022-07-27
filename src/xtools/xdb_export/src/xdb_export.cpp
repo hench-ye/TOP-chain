@@ -78,7 +78,9 @@ xdb_export_tools_t::xdb_export_tools_t(std::string const & db_path) {
     
     std::shared_ptr<db::xdb_face_t> db;
     if (db_path_num > 1)    {
-        db = db::xdb_factory_t::instance(db_path, db_data_paths);
+        //db = db::xdb_factory_t::instance(db_path, db_data_paths);
+        int dst_db_kind = top::db::xdb_kind_kvdb | top::db::xdb_kind_readonly | db::xdb_kind_no_multi_cf | db::xdb_kind_no_compress;
+        db = top::db::xdb_factory_t::create(dst_db_kind, db_path);  
     } else {
         db = db::xdb_factory_t::instance(db_path);
     }
@@ -676,7 +678,7 @@ void xdb_export_tools_t::query_balance() {
     out_json.close();
 }
 
-void xdb_export_tools_t::query_archive_db(const uint32_t redundancy) {
+void xdb_export_tools_t::query_archive_db(const uint32_t redundancy, const uint32_t thread_num) {
     std::string filename = "check_archive_db.log";
     std::ofstream file(filename);
     uint32_t total_errors{0};
@@ -685,7 +687,7 @@ void xdb_export_tools_t::query_archive_db(const uint32_t redundancy) {
     std::cout << "step 1 ===> checking table accounts..." << std::endl;
     auto t1 = base::xtime_utl::time_now_ms();
     {
-        asio::thread_pool pool(8);
+        asio::thread_pool pool(thread_num);
         auto const tables = xdb_export_tools_t::get_table_accounts();
         for (size_t i = 0; i < tables.size(); i++) {
             asio::post(pool, std::bind(&xdb_export_tools_t::query_archive_db_internal, this, tables[i], query_account_table, redundancy, std::ref(file), std::ref(total_errors)));
@@ -698,7 +700,7 @@ void xdb_export_tools_t::query_archive_db(const uint32_t redundancy) {
     // step 2: check unit
     std::cout << "step 2 ===> checking unit accounts..." << std::endl;
     {
-        asio::thread_pool pool(8);
+        asio::thread_pool pool(thread_num);
         auto const units = get_db_unit_accounts();
         for (size_t i = 0; i < units.size(); i++) {
             asio::post(pool, std::bind(&xdb_export_tools_t::query_archive_db_internal, this, units[i], query_account_unit, 0, std::ref(file), std::ref(total_errors)));
@@ -727,7 +729,6 @@ void xdb_export_tools_t::query_archive_db(const uint32_t redundancy) {
         generate_common_file("success", {});
     }
 }
-
 void xdb_export_tools_t::query_archive_db_internal(std::string const & account, enum_query_account_type type, const uint32_t redundancy, std::ofstream & file, uint32_t & errors) {
     uint32_t error_num = 0;
     std::string type_str;
@@ -783,6 +784,7 @@ void xdb_export_tools_t::query_archive_db_internal(std::string const & account, 
             auto const block = m_blockstore->load_block_object(account, h, 0, false);
             last_hash = block->get_block_hash();
         }
+        auto t1 = base::xtime_utl::time_now_ms();
         do {
             auto const block = m_blockstore->load_block_object(account, h, last_hash, true);
             if (block == nullptr) {
@@ -790,6 +792,10 @@ void xdb_export_tools_t::query_archive_db_internal(std::string const & account, 
                 error_num++;
                 break;
             }
+/*            auto t2 = base::xtime_utl::time_now_ms();
+            std::cout << "process1 " << account << "," << h << ", time: " << t2 - t1 << std::endl;
+            t1 = base::xtime_utl::time_now_ms();*/
+            
             last_hash = block->get_last_block_hash();
             if (type == query_account_system) {
                 continue;
@@ -817,6 +823,12 @@ void xdb_export_tools_t::query_archive_db_internal(std::string const & account, 
                             << ", load tx idx null!" << std::endl;
                     error_num++;
                 }
+            }
+
+            if (h % 10000 == 0) {
+                auto t2 = base::xtime_utl::time_now_ms();
+                std::cout << "process " << account << "," << h << ", time: " << (t2 - t1) / 1000 << "s." << std::endl;
+                t1 = base::xtime_utl::time_now_ms();
             }
         } while (h-- > 0);
     } while (0);

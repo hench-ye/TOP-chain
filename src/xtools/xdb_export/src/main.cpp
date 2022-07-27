@@ -314,16 +314,19 @@ int main(int argc, char ** argv) {
     } else if (function_name == "check_balance") {
         tools.query_balance();
     } else if (function_name == "check_archive_db") {
-        if (argc != 3 && argc != 4) {
+        if (argc != 3 && argc != 4 && argc != 5) {
             usage();
             return -1;
         }
         uint32_t redundancy = 0;
-        if (argc == 4) {
+        if (argc >= 4) {
             redundancy = std::stoi(argv[3]);
         }
+        uint32_t thread_num = 4;
+        if (argc >= 5)
+            thread_num = std::stoi(argv[4]);
         auto t1 = base::xtime_utl::time_now_ms();
-        tools.query_archive_db(redundancy);
+        tools.query_archive_db(redundancy, thread_num);
         auto t2 = base::xtime_utl::time_now_ms();
         std::cout << "check_archive_db total time: " << (t2 - t1) / 1000 << "s." << std::endl;
     } else if (function_name == "parse_checkpoint") {
