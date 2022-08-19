@@ -235,6 +235,18 @@ void xedge_evm_method_base<T>::sendTransaction_method(xjson_proc_t & json_proc, 
         json_proc.m_response_json["error"] = errinfo;
         return ;
     }
+    if (json_proc.m_tx_ptr->get_tx_type() == data::xtransaction_type_transfer) {
+        if ((m_archive_flag && !XGET_CONFIG(enable_exchange_rpc_transfer)) || (!m_archive_flag && !XGET_CONFIG(enable_edge_rpc_transfer))) {
+            eth::EthErrorCode::deal_error(json_proc.m_response_json, eth::enum_eth_rpc_method_not_find, "not support transfer.");
+            return;
+        }
+    }
+    if (json_proc.m_tx_ptr->get_tx_type() == data::xtransaction_type_deploy_evm_contract) {
+        if ((m_archive_flag && !XGET_CONFIG(enable_exchange_rpc_deploy_contract)) || (!m_archive_flag && !XGET_CONFIG(enable_edge_rpc_deploy_contract))) {
+            eth::EthErrorCode::deal_error(json_proc.m_response_json, eth::enum_eth_rpc_method_not_find, "not support transfer.");
+            return;
+        }
+    }
 
     // TODO(jimmy) refactor tx verifier
     if (xverifier::xtx_verifier::verify_send_tx_validation(tx.get())) {

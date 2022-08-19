@@ -132,12 +132,12 @@ void xconfig_register_t::init_static_config() {
     XADD_OFFCHAIN_PARAMETER(enable_edge_evm_rpc);
     XADD_OFFCHAIN_PARAMETER(enable_edge_relay_rpc);
     XADD_OFFCHAIN_PARAMETER(enable_edge_rpc_transfer);
-    XADD_OFFCHAIN_PARAMETER(enable_edge_rpc_contract);
+    XADD_OFFCHAIN_PARAMETER(enable_edge_rpc_deploy_contract);
     XADD_OFFCHAIN_PARAMETER(enable_exchange_top_rpc);
     XADD_OFFCHAIN_PARAMETER(enable_exchange_evm_rpc);
     XADD_OFFCHAIN_PARAMETER(enable_exchange_relay_rpc);
     XADD_OFFCHAIN_PARAMETER(enable_exchange_rpc_transfer);
-    XADD_OFFCHAIN_PARAMETER(enable_exchange_rpc_contract);
+    XADD_OFFCHAIN_PARAMETER(enable_exchange_rpc_deploy_contract);
     XADD_OFFCHAIN_PARAMETER(enable_sharding_contract);
     XADD_OFFCHAIN_PARAMETER(enable_gas_fee);
 

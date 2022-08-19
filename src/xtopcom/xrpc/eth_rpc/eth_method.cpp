@@ -25,17 +25,16 @@ void EthMethod::init(bool archive_flag) {
     m_supported_method.insert("eth_getTransactionByHash");
     m_supported_method.insert("eth_getTransactionReceipt");
 
-    if ((archive_flag && (XGET_CONFIG(enable_exchange_rpc_transfer) || XGET_CONFIG(enable_exchange_rpc_contract))) ||
-        (!archive_flag && (XGET_CONFIG(enable_edge_rpc_transfer) || XGET_CONFIG(enable_edge_rpc_contract)))) {
-        m_eth_method_map.emplace(std::make_pair("eth_gasPrice", std::bind(&EthMethod::eth_gasPrice, this, std::placeholders::_1, std::placeholders::_2)));
-        m_supported_method.insert("eth_getBalance");
-        m_supported_method.insert("eth_blockNumber");
-        m_supported_method.insert("eth_sendRawTransaction");
-        m_supported_method.insert("eth_estimateGas");
-        m_supported_method.insert("eth_getBlockByHash");
-        m_supported_method.insert("eth_getBlockByNumber");
-        m_supported_method.insert("top_getBalance");
-    }
+//    if ((archive_flag && (XGET_CONFIG(enable_exchange_rpc_transfer) || XGET_CONFIG(enable_exchange_rpc_deploy_contract))) ||
+//        (!archive_flag && (XGET_CONFIG(enable_edge_rpc_transfer) || XGET_CONFIG(enable_edge_rpc_deploy_contract)))) {
+    m_eth_method_map.emplace(std::make_pair("eth_gasPrice", std::bind(&EthMethod::eth_gasPrice, this, std::placeholders::_1, std::placeholders::_2)));
+    m_supported_method.insert("eth_getBalance");
+    m_supported_method.insert("eth_blockNumber");
+    m_supported_method.insert("eth_sendRawTransaction");
+    m_supported_method.insert("eth_estimateGas");
+    m_supported_method.insert("eth_getBlockByHash");
+    m_supported_method.insert("eth_getBlockByNumber");
+    m_supported_method.insert("top_getBalance");
 
     if ((archive_flag && XGET_CONFIG(enable_exchange_relay_rpc)) || (!archive_flag && XGET_CONFIG(enable_edge_relay_rpc))) {
         m_supported_method.insert("topRelay_getPolyBlockHashListByHash");
