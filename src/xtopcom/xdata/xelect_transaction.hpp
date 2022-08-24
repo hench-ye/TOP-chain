@@ -207,6 +207,12 @@ public:
         XADD_ONCHAIN_GOVERNANCE_PARAMETER(relay_election_interval);
         XADD_ONCHAIN_GOVERNANCE_PARAMETER(cross_chain_contract_list);
 #endif
+        XADD_ONCHAIN_GOVERNANCE_PARAMETER(toggle_register_whitelist);
+        XADD_ONCHAIN_GOVERNANCE_PARAMETER(register_advance_whitelist);
+        XADD_ONCHAIN_GOVERNANCE_PARAMETER(register_validator_whitelist);
+        XADD_ONCHAIN_GOVERNANCE_PARAMETER(register_exchange_whitelist);
+        XADD_ONCHAIN_GOVERNANCE_PARAMETER(register_edge_whitelist);
+        XADD_ONCHAIN_GOVERNANCE_PARAMETER(register_archive_whitelist);
 
         std::vector<std::string> committee_addrs = xrootblock_t::get_tcc_initial_committee_addr();
         for (auto & v : committee_addrs) {

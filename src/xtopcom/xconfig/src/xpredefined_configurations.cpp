@@ -254,6 +254,8 @@ XDEFINE_CONFIGURATION(enable_exchange_rpc_deploy_contract);
 XDEFINE_CONFIGURATION(enable_sharding_contract);
 XDEFINE_CONFIGURATION(enable_gas_fee);
 
+XDEFINE_ONCHAIN_GOVERNANCE_PARAMETER(toggle_register_whitelist);
+XDEFINE_ONCHAIN_GOVERNANCE_PARAMETER(register_whitelist);
 #    undef XDEFINE_ONCHAIN_GOVERNANCE_PARAMETER
 #    undef XDEFINE_CONFIGURATION
 

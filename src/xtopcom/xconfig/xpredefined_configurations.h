@@ -602,6 +602,12 @@ XDECLARE_CONFIGURATION(enable_exchange_rpc_transfer, bool, true);
 XDECLARE_CONFIGURATION(enable_exchange_rpc_deploy_contract, bool, true);
 XDECLARE_CONFIGURATION(enable_sharding_contract, bool, false);
 XDECLARE_CONFIGURATION(enable_gas_fee, bool, false);
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(toggle_register_whitelist, bool, normal, true, false, true);
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_advance_whitelist, char const *, normal, "", "", "");
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_validator_whitelist, char const *, normal, "", "", "");
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_exchange_whitelist, char const *, normal, "", "", "");
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_edge_whitelist, char const *, normal, "", "", "");
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_archive_whitelist, char const *, normal, "", "", "");
 */
 XDECLARE_CONFIGURATION(enable_grpc, bool, true);
 XDECLARE_CONFIGURATION(enable_edge_top_rpc, bool, true);
@@ -616,6 +622,12 @@ XDECLARE_CONFIGURATION(enable_exchange_rpc_transfer, bool, true);
 XDECLARE_CONFIGURATION(enable_exchange_rpc_deploy_contract, bool, true);
 XDECLARE_CONFIGURATION(enable_sharding_contract, bool, true);
 XDECLARE_CONFIGURATION(enable_gas_fee, bool, true);
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(toggle_register_whitelist, bool, normal, false, false, true);
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_advance_whitelist, char const *, normal, "", "", "");
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_validator_whitelist, char const *, normal, "", "", "");
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_exchange_whitelist, char const *, normal, "", "", "");
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_edge_whitelist, char const *, normal, "", "", "");
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_archive_whitelist, char const *, normal, "", "", "");
 
 #undef XDECLARE_CONFIGURATION
 

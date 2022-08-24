@@ -246,6 +246,10 @@ void xrec_registration_contract::registerNode2(const std::string & miner_type_na
          signing_key.c_str(),
          dividend_rate);
 
+    if (XGET_ONCHAIN_GOVERNANCE_PARAMETER(toggle_register_whitelist)) {
+        XCONTRACT_ENSURE(check_miner_type(account, miner_type), "xrec_registration_contract::registerNode: account not in whitelist.")
+    }
+
     XCONTRACT_ENSURE(common::is_t0(account) || common::is_t8(account), "only T0 or T8 account is allowed to be registered as node account");
 
     data::system_contract::xreg_node_info node_info;
@@ -1031,7 +1035,31 @@ void xrec_registration_contract::init_node_credit(data::system_contract::xreg_no
     }
 
 }
+bool xrec_registration_contract::check_miner_type(const std::string& account, const common::xenum_miner_type& miner_type) {
+    std::string nodes;
+    if (miner_type == common::edge)
+        nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_edge_whitelist);
+    else if (miner_type == common::advance)
+        nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_advance_whitelist);
+    else if (miner_type == common::validator)
+        nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_validator_whitelist);
+    else if (miner_type == common::exchange)
+        nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_exchange_whitelist);
+    else if (miner_type == common::archive)
+        nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_archive_whitelist);
+    else {
+        xwarn("xrec_registration_contract::check_miner_type, unknown miner_type, %s, %d", account.c_str(), miner_type);
+        return false;
+    }
 
+    std::vector<std::string> node_list;
+    base::xstring_utl::split_string(nodes, ',', node_list);
+
+    if (std::find(std::begin(node_list), std::end(node_list), account) != std::end(node_list))
+        return true;
+    xwarn("xrec_registration_contract::check_miner_type fail, %s, %d", account.c_str(), miner_type);
+    return false;
+}
 NS_END2
 
 #undef XREG_CONTRACT
