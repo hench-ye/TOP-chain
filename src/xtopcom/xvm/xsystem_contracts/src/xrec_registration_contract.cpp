@@ -247,7 +247,7 @@ void xrec_registration_contract::registerNode2(const std::string & miner_type_na
          dividend_rate);
 
     if (XGET_ONCHAIN_GOVERNANCE_PARAMETER(toggle_register_whitelist)) {
-        XCONTRACT_ENSURE(check_miner_type(account, miner_type), "xrec_registration_contract::registerNode: account not in whitelist.")
+        XCONTRACT_ENSURE(check_miner_type(account.value(), miner_type), "xrec_registration_contract::registerNode: account not in whitelist.");
     }
 
     XCONTRACT_ENSURE(common::is_t0(account) || common::is_t8(account), "only T0 or T8 account is allowed to be registered as node account");
@@ -1035,17 +1035,17 @@ void xrec_registration_contract::init_node_credit(data::system_contract::xreg_no
     }
 
 }
-bool xrec_registration_contract::check_miner_type(const std::string& account, const common::xenum_miner_type& miner_type) {
+bool xrec_registration_contract::check_miner_type(const std::string& account, const common::xminer_type_t& miner_type) {
     std::string nodes;
-    if (miner_type == common::edge)
+    if (miner_type == common::xminer_type_t::edge)
         nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_edge_whitelist);
-    else if (miner_type == common::advance)
+    else if (miner_type == common::xminer_type_t::advance)
         nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_advance_whitelist);
-    else if (miner_type == common::validator)
+    else if (miner_type == common::xminer_type_t::validator)
         nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_validator_whitelist);
-    else if (miner_type == common::exchange)
+    else if (miner_type == common::xminer_type_t::exchange)
         nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_exchange_whitelist);
-    else if (miner_type == common::archive)
+    else if (miner_type == common::xminer_type_t::archive)
         nodes = XGET_ONCHAIN_GOVERNANCE_PARAMETER(register_archive_whitelist);
     else {
         xwarn("xrec_registration_contract::check_miner_type, unknown miner_type, %s, %d", account.c_str(), miner_type);
