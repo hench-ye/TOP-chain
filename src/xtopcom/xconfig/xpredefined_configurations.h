@@ -622,7 +622,7 @@ XDECLARE_CONFIGURATION(enable_exchange_rpc_transfer, bool, true);
 XDECLARE_CONFIGURATION(enable_exchange_rpc_deploy_contract, bool, true);
 XDECLARE_CONFIGURATION(enable_sharding_contract, bool, true);
 XDECLARE_CONFIGURATION(enable_gas_fee, bool, true);
-XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(toggle_register_whitelist, bool, normal, false, false, true);
+XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(toggle_register_whitelist, std::uint16_t, normal, 0, 0, 1);
 XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_advance_whitelist, char const *, normal, "", "", "");
 XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_validator_whitelist, char const *, normal, "", "", "");
 XDECLARE_ONCHAIN_GOVERNANCE_PARAMETER(register_exchange_whitelist, char const *, normal, "", "", "");
