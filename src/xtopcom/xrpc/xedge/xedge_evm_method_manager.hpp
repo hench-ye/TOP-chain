@@ -133,7 +133,6 @@ xedge_evm_method_base<T>::xedge_evm_method_base(shared_ptr<xrpc_edge_vhost> edge
     m_edge_handler_ptr->init();
     m_edge_tx_method_map.emplace(                                                                                                                                                  \
         pair<pair<string, string>, tx_method_handler>{pair<string, string>{"2.0", "eth_sendRawTransaction"}, std::bind(&xedge_evm_method_base<T>::sendTransaction_method, this, _1, _2)});
-    m_eth_method.init(archive_flag);
 }
 
 template <class T>
